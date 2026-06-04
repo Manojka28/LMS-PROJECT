@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="IIITL Coding School">
+  <defs>
+    <linearGradient id="iiitl-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D26A"/>
+      <stop offset="100%" stop-color="#00bbf9"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="54" fill="#0b0b0b" stroke="url(#iiitl-ring)" stroke-width="4"/>
+  <text x="60" y="54" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="26" fill="#ffffff">IIITL</text>
+  <text x="60" y="76" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#00D26A">&lt;/&gt; Coding School</text>
+</svg>
