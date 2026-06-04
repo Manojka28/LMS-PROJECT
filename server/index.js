@@ -10,6 +10,7 @@ import contactRoutes from './routes/contact.js';
 import courseRoutes from './routes/course.js';
 import healthRoutes from './routes/health.js';
 import userRoutes from './routes/user.js';
+import progressRoutes from './routes/progress.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/course', courseRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/progress', progressRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

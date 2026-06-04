@@ -4,12 +4,14 @@ import { api, ApiError } from '../services/api';
 import CourseNavbar from '../components/CourseNavbar';
 import TiltCard from '../components/TiltCard';
 import MagneticButton from '../components/MagneticButton';
+import ProgressBar from '../components/ProgressBar';
 
 const PLACEHOLDER_IMG =
   'https://images.unsplash.com/photo-1516321318423-f06f868dfd4d?q=80&w=800&auto=format&fit=crop';
 
 export default function MyCoursesPage() {
   const [courses, setCourses] = useState([]);
+  const [progressData, setProgressData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -20,14 +22,28 @@ export default function MyCoursesPage() {
       setLoading(true);
       setError('');
       try {
-        const data = await api.get('/user/my-courses');
-        if (!cancelled) setCourses(data.courses || []);
+        const [courseRes, progressRes] = await Promise.all([
+          api.get('/user/my-courses'),
+          api.get('/progress')
+        ]);
+        
+        if (!cancelled) {
+          setCourses(courseRes.courses || []);
+          
+          const progMap = {};
+          if (progressRes.progress) {
+            progressRes.progress.forEach(p => {
+              progMap[p.course._id || p.course] = p;
+            });
+          }
+          setProgressData(progMap);
+        }
       } catch (err) {
         if (!cancelled) {
           setError(
             err instanceof ApiError
               ? err.message
-              : 'Failed to load your courses.'
+              : 'Failed to load your courses and progress.'
           );
         }
       } finally {
@@ -85,44 +101,51 @@ export default function MyCoursesPage() {
 
         {!loading && !error && courses.length > 0 && (
           <div className="courses-grid">
-            {courses.map((course) => (
-              <TiltCard key={course._id} className="course-card">
-                <div className="course-img">
-                  <img
-                    src={course.thumbnail || PLACEHOLDER_IMG}
-                    alt={course.title}
-                    onError={(e) => {
-                      e.currentTarget.src = PLACEHOLDER_IMG;
-                    }}
-                  />
-                </div>
-                <div className="course-details">
-                  <div className="course-tags">
-                    <span>{course.category}</span>
-                    <span>{course.level}</span>
-                  </div>
-                  <h2>{course.title}</h2>
-                  <p className="course-card-instructor">
-                    <i className="ri-user-star-line" />{' '}
-                    {course.instructor?.name || 'Instructor'}
-                  </p>
-                  
-                  {/* Progress placeholder for the future */}
-                  <div style={{ marginTop: '15px', background: '#222', borderRadius: '4px', height: '6px', width: '100%' }}>
-                    <div style={{ background: '#00D26A', width: '0%', height: '100%', borderRadius: '4px' }}></div>
-                  </div>
-                  <p className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>0% Complete</p>
+            {courses.map((course) => {
+              const prog = progressData[course._id];
+              const isCompleted = prog?.completed;
 
-                  <div className="course-footer" style={{ justifyContent: 'flex-end' }}>
-                    <Link to={`/courses/${course._id}`} style={{ textDecoration: 'none' }}>
-                      <MagneticButton className="green-btn-sm ripple-btn" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                         <i className="ri-play-circle-fill" /> Continue Learning
-                      </MagneticButton>
-                    </Link>
+              return (
+                <TiltCard key={course._id} className="course-card">
+                  <div className="course-img">
+                    <img
+                      src={course.thumbnail || PLACEHOLDER_IMG}
+                      alt={course.title}
+                      onError={(e) => {
+                        e.currentTarget.src = PLACEHOLDER_IMG;
+                      }}
+                    />
+                    {isCompleted && (
+                      <div style={{ position: 'absolute', top: 10, right: 10, background: '#FFD700', color: '#000', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                        <i className="ri-medal-fill" /> Completed
+                      </div>
+                    )}
                   </div>
-                </div>
-              </TiltCard>
-            ))}
+                  <div className="course-details">
+                    <div className="course-tags">
+                      <span>{course.category}</span>
+                      <span>{course.level}</span>
+                    </div>
+                    <h2>{course.title}</h2>
+                    <p className="course-card-instructor">
+                      <i className="ri-user-star-line" />{' '}
+                      {course.instructor?.name || 'Instructor'}
+                    </p>
+                    
+                    <ProgressBar percentage={prog?.completionPercentage || 0} />
+
+                    <div className="course-footer" style={{ justifyContent: 'flex-end', marginTop: '15px' }}>
+                      <Link to={`/courses/${course._id}`} style={{ textDecoration: 'none' }}>
+                        <MagneticButton className="green-btn-sm ripple-btn" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                           <i className={isCompleted ? "ri-refresh-line" : "ri-play-circle-fill"} /> 
+                           {isCompleted ? 'Review Course' : (prog?.completionPercentage > 0 ? 'Continue Learning' : 'Start Learning')}
+                        </MagneticButton>
+                      </Link>
+                    </div>
+                  </div>
+                </TiltCard>
+              );
+            })}
           </div>
         )}
       </main>

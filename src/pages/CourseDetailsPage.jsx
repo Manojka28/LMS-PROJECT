@@ -5,6 +5,7 @@ import { api, ApiError } from '../services/api';
 import { canEditCourse, formatDuration, formatPrice } from '../utils/courseHelpers';
 import CourseNavbar from '../components/CourseNavbar';
 import MagneticButton from '../components/MagneticButton';
+import ProgressBar from '../components/ProgressBar';
 
 const PLACEHOLDER_IMG =
   'https://images.unsplash.com/photo-1516321318423-f06f868dfd4d?q=80&w=1200&auto=format&fit=crop';
@@ -15,12 +16,16 @@ export default function CourseDetailsPage() {
   const { user } = useAuth();
 
   const [course, setCourse] = useState(null);
+  const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
   const [enrolling, setEnrolling] = useState(false);
   const [enrollError, setEnrollError] = useState('');
   const [enrollSuccess, setEnrollSuccess] = useState('');
+
+  const userId = user?.id || user?._id;
+  const isEnrolled = course && user && course.enrolledStudents?.some(sId => String(sId) === String(userId));
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +36,17 @@ export default function CourseDetailsPage() {
       try {
         const data = await api.get(`/course/${id}`);
         if (!cancelled) setCourse(data.course);
+
+        // Fetch progress if enrolled
+        if (user && data.course.enrolledStudents?.some(sId => String(sId) === String(userId))) {
+          try {
+            const progData = await api.get(`/progress/${id}`);
+            if (!cancelled) setProgress(progData.progress);
+          } catch (err) {
+            console.error('Progress fetch error:', err);
+            // Non-blocking error
+          }
+        }
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -46,11 +62,9 @@ export default function CourseDetailsPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, user, userId]);
 
   const editable = course && user && canEditCourse(user, course);
-  const userId = user?.id || user?._id;
-  const isEnrolled = course && user && course.enrolledStudents?.some(sId => String(sId) === String(userId));
 
   const handleEnroll = async () => {
     if (!user) {
@@ -67,10 +81,39 @@ export default function CourseDetailsPage() {
         ...prev,
         enrolledStudents: [...(prev.enrolledStudents || []), userId],
       }));
+      // Initialize progress
+      const progData = await api.get(`/progress/${id}`);
+      setProgress(progData.progress);
     } catch (err) {
       setEnrollError(err instanceof ApiError ? err.message : 'Failed to enroll.');
     } finally {
       setEnrolling(false);
+    }
+  };
+
+  const handleCompleteLecture = async (lectureId) => {
+    if (!isEnrolled) return;
+    try {
+      const data = await api.post('/progress/complete-lecture', {
+        courseId: id,
+        lectureId
+      });
+      setProgress(data.progress);
+    } catch (err) {
+      console.error('Failed to complete lecture:', err);
+    }
+  };
+
+  const handleViewLecture = async (lectureId) => {
+    if (!isEnrolled) return;
+    try {
+      const data = await api.post('/progress/update-last-viewed', {
+        courseId: id,
+        lectureId
+      });
+      setProgress(data.progress);
+    } catch (err) {
+      console.error('Failed to update last viewed:', err);
     }
   };
 
@@ -144,6 +187,18 @@ export default function CourseDetailsPage() {
                     <h4>{course.enrolledStudents?.length ?? 0}</h4>
                   </div>
                 </div>
+
+                {progress && (
+                  <div style={{ marginTop: '20px', marginBottom: '10px' }}>
+                    <ProgressBar percentage={progress.completionPercentage} />
+                    {progress.completed && (
+                      <span className="form-alert-success" style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #00D26A', display: 'inline-block', marginTop: '10px' }}>
+                        <i className="ri-medal-fill" /> Course Completed!
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {editable && (
                   <MagneticButton
                     className="green-btn ripple-btn"
@@ -153,12 +208,26 @@ export default function CourseDetailsPage() {
                   </MagneticButton>
                 )}
                 {!editable && user && isEnrolled && (
-                  <MagneticButton
-                    className="green-btn ripple-btn"
-                    onClick={() => navigate('/my-courses')}
-                  >
-                    Go to My Courses
-                  </MagneticButton>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {progress?.lastViewedLecture && (
+                      <MagneticButton
+                        className="green-btn ripple-btn"
+                        onClick={() => {
+                          const el = document.getElementById(`lecture-${progress.lastViewedLecture}`);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                      >
+                        Resume Course
+                      </MagneticButton>
+                    )}
+                    <MagneticButton
+                      className="ripple-btn"
+                      onClick={() => navigate('/my-courses')}
+                      style={{ border: '1px solid #444' }}
+                    >
+                      Dashboard
+                    </MagneticButton>
+                  </div>
                 )}
                 {!editable && user && !isEnrolled && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -199,41 +268,59 @@ export default function CourseDetailsPage() {
                         <p className="muted section-empty">No lectures in this section.</p>
                       ) : (
                         <ul className="lecture-list">
-                          {section.lectures.map((lecture, lIdx) => (
-                            <li key={lecture._id || lIdx} className="lecture-item">
-                              <div className="lecture-item-head">
-                                <i className="ri-play-circle-line" />
-                                <div>
-                                  <h4>{lecture.title}</h4>
-                                  {lecture.description && <p>{lecture.description}</p>}
+                          {section.lectures.map((lecture, lIdx) => {
+                            const isLecCompleted = progress?.completedLectures?.includes(lecture._id);
+                            return (
+                              <li key={lecture._id || lIdx} className="lecture-item" id={`lecture-${lecture._id}`}>
+                                <div className="lecture-item-head">
+                                  <i className="ri-play-circle-line" />
+                                  <div style={{ flex: 1 }}>
+                                    <h4>{lecture.title}</h4>
+                                    {lecture.description && <p>{lecture.description}</p>}
+                                  </div>
+                                  <span className="lecture-duration">
+                                    {formatDuration(lecture.duration)}
+                                  </span>
+                                  {isEnrolled && !isLecCompleted && (
+                                    <button 
+                                      className="green-btn-sm" 
+                                      onClick={() => handleCompleteLecture(lecture._id)}
+                                      style={{ marginLeft: '10px', padding: '4px 10px', fontSize: '12px' }}
+                                    >
+                                      Mark Complete
+                                    </button>
+                                  )}
+                                  {isEnrolled && isLecCompleted && (
+                                    <span style={{ marginLeft: '10px', color: '#00D26A', fontSize: '12px', fontWeight: 'bold' }}>
+                                      <i className="ri-check-line" /> Completed
+                                    </span>
+                                  )}
                                 </div>
-                                <span className="lecture-duration">
-                                  {formatDuration(lecture.duration)}
-                                </span>
-                              </div>
-                              {lecture.videoUrl && (
-                                <a
-                                  href={lecture.videoUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="lecture-video-link"
-                                >
-                                  Watch video
-                                </a>
-                              )}
-                              {lecture.resources?.length > 0 && (
-                                <ul className="lecture-resources">
-                                  {lecture.resources.map((res) => (
-                                    <li key={res._id || res.title}>
-                                      <a href={res.fileUrl} target="_blank" rel="noreferrer">
-                                        {res.title}
-                                      </a>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </li>
-                          ))}
+                                {lecture.videoUrl && (
+                                  <a
+                                    href={lecture.videoUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="lecture-video-link"
+                                    onClick={() => handleViewLecture(lecture._id)}
+                                  >
+                                    Watch video
+                                  </a>
+                                )}
+                                {lecture.resources?.length > 0 && (
+                                  <ul className="lecture-resources">
+                                    {lecture.resources.map((res) => (
+                                      <li key={res._id || res.title}>
+                                        <a href={res.fileUrl} target="_blank" rel="noreferrer">
+                                          {res.title}
+                                        </a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                       )}
                     </div>
