@@ -15,6 +15,14 @@ export default function DashboardPlaceholder() {
           Role: <span className="green">{user?.role}</span> — Full dashboard coming in Phase 2.
         </p>
         <div className="auth-actions">
+          <Link to="/courses">
+            <MagneticButton className="green-btn ripple-btn">Browse Courses</MagneticButton>
+          </Link>
+          {(user?.role === 'instructor' || user?.role === 'admin') && (
+            <Link to="/instructor/create-course">
+              <MagneticButton className="ripple-btn">Create Course</MagneticButton>
+            </Link>
+          )}
           <Link to="/">
             <MagneticButton className="ripple-btn">Back to Home</MagneticButton>
           </Link>

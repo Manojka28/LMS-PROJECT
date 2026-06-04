@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6, select: false },
     role: { type: String, enum: ['student', 'instructor', 'admin'], default: 'student' },
+    purchasedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
   },
   { timestamps: true }
 );

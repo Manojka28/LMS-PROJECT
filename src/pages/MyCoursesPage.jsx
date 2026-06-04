@@ -1,0 +1,131 @@
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api, ApiError } from '../services/api';
+import CourseNavbar from '../components/CourseNavbar';
+import TiltCard from '../components/TiltCard';
+import MagneticButton from '../components/MagneticButton';
+
+const PLACEHOLDER_IMG =
+  'https://images.unsplash.com/photo-1516321318423-f06f868dfd4d?q=80&w=800&auto=format&fit=crop';
+
+export default function MyCoursesPage() {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await api.get('/user/my-courses');
+        if (!cancelled) setCourses(data.courses || []);
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof ApiError
+              ? err.message
+              : 'Failed to load your courses.'
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="course-page-wrap">
+      <div className="noise-overlay" />
+      <div className="blob blob-1" />
+      <div className="blob blob-3" />
+
+      <CourseNavbar />
+
+      <main className="course-page-main">
+        <header className="course-page-header">
+          <h4 className="green">DASHBOARD</h4>
+          <h1>My Courses</h1>
+          <p>Continue your learning journey.</p>
+        </header>
+
+        {loading && (
+          <div className="page-loading">
+            <div className="loading-bar" style={{ width: 200 }} />
+            <p>Loading your courses...</p>
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="course-state-card course-state-error">
+            <i className="ri-error-warning-line" />
+            <p>{error}</p>
+            <button type="button" className="green-btn" onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && courses.length === 0 && (
+          <div className="course-state-card">
+            <i className="ri-book-open-line" />
+            <p>You haven't enrolled in any courses yet.</p>
+            <Link to="/courses" className="green-btn-sm" style={{ marginTop: '16px' }}>
+              Browse Catalog
+            </Link>
+          </div>
+        )}
+
+        {!loading && !error && courses.length > 0 && (
+          <div className="courses-grid">
+            {courses.map((course) => (
+              <TiltCard key={course._id} className="course-card">
+                <div className="course-img">
+                  <img
+                    src={course.thumbnail || PLACEHOLDER_IMG}
+                    alt={course.title}
+                    onError={(e) => {
+                      e.currentTarget.src = PLACEHOLDER_IMG;
+                    }}
+                  />
+                </div>
+                <div className="course-details">
+                  <div className="course-tags">
+                    <span>{course.category}</span>
+                    <span>{course.level}</span>
+                  </div>
+                  <h2>{course.title}</h2>
+                  <p className="course-card-instructor">
+                    <i className="ri-user-star-line" />{' '}
+                    {course.instructor?.name || 'Instructor'}
+                  </p>
+                  
+                  {/* Progress placeholder for the future */}
+                  <div style={{ marginTop: '15px', background: '#222', borderRadius: '4px', height: '6px', width: '100%' }}>
+                    <div style={{ background: '#00D26A', width: '0%', height: '100%', borderRadius: '4px' }}></div>
+                  </div>
+                  <p className="muted" style={{ fontSize: '11px', marginTop: '4px' }}>0% Complete</p>
+
+                  <div className="course-footer" style={{ justifyContent: 'flex-end' }}>
+                    <Link to={`/courses/${course._id}`} style={{ textDecoration: 'none' }}>
+                      <MagneticButton className="green-btn-sm ripple-btn" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                         <i className="ri-play-circle-fill" /> Continue Learning
+                      </MagneticButton>
+                    </Link>
+                  </div>
+                </div>
+              </TiltCard>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

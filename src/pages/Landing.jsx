@@ -134,7 +134,8 @@ export default function Landing() {
 
   const navLinks = [
     { id: 'hero-top', label: 'Home' },
-    { id: 'courses-section', label: 'Courses' },
+    { to: '/courses', label: 'All Courses', route: true },
+    { id: 'courses-section', label: 'Programs' },
     { id: 'faq-section', label: 'FAQ' },
     { id: 'contact-section', label: 'Contact' },
   ];
@@ -161,11 +162,17 @@ export default function Landing() {
           </h4>
         </div>
         <div className="nav2">
-          {navLinks.map((link) => (
-            <h4 key={link.id} onClick={() => handleScrollTo(link.id)}>
-              {link.label}
-            </h4>
-          ))}
+          {navLinks.map((link) =>
+            link.route ? (
+              <Link key={link.to} to={link.to}>
+                <h4>{link.label}</h4>
+              </Link>
+            ) : (
+              <h4 key={link.id} onClick={() => handleScrollTo(link.id)}>
+                {link.label}
+              </h4>
+            )
+          )}
           <h4 className="coming-soon" onClick={() => setShowCohortModal(true)}>
             Cohort 2.0
           </h4>
@@ -270,11 +277,27 @@ export default function Landing() {
           <button type="button" className="mobile-menu-close" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
             <i className="ri-close-line" />
           </button>
-          {navLinks.map((link) => (
-            <button key={link.id} type="button" className="mobile-menu-link" onClick={() => handleScrollTo(link.id)}>
-              {link.label}
-            </button>
-          ))}
+          {navLinks.map((link) =>
+            link.route ? (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="mobile-menu-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <button
+                key={link.id}
+                type="button"
+                className="mobile-menu-link"
+                onClick={() => handleScrollTo(link.id)}
+              >
+                {link.label}
+              </button>
+            )
+          )}
           <button type="button" className="mobile-menu-link" onClick={() => { setMobileMenuOpen(false); setShowCohortModal(true); }}>
             Cohort 2.0
           </button>
@@ -292,33 +315,33 @@ export default function Landing() {
         <section id="hero-top" className="hero-section">
           <div className="left reveal-stagger">
             <h1>
-              2.0 Job Ready AI Powered Cohort: <br />
-              Complete Web Development + <br />
-              DSA + Gen-AI + Aptitude
+              The Ultimate AI-Powered Cohort 2.0 <br />
+              Master Full-Stack, DSA & <br />
+              Generative AI
             </h1>
             <div className="tags">
               <h4>MERN Stack</h4>
-              <h4>DSA with JS</h4>
-              <h4>AI Powered</h4>
-              <h4>Placement Focused</h4>
+              <h4>Advanced DSA</h4>
+              <h4>Gen-AI Tools</h4>
+              <h4>100% Placement Support</h4>
             </div>
             <h3>
-              Price <span>₹ 5999</span> <span className="cut-price">₹ 11999</span> (+GST)
+              Special Offer <span>₹ 4999</span> <span className="cut-price">₹ 12999</span> (+GST)
             </h3>
             <div className="btns">
               <MagneticButton className="green-btn ripple-btn" onClick={() => handleScrollTo('contact-section')}>
-                Buy Now
+                Enroll Now
               </MagneticButton>
               <MagneticButton className="ripple-btn" onClick={() => handleScrollTo('courses-section')}>
-                View Syllabus
+                Explore Syllabus
               </MagneticButton>
             </div>
             <h6>
-              Batch Starts on <span>15th September</span>
+              Next Batch Starts on <span>15th September</span>
             </h6>
             <div className="bottom-text">
-              <h1 className="shimmer-text">Get Placed.</h1>
-              <p>With Job Ready AI Powered Cohort</p>
+              <h1 className="shimmer-text">Launch Your Career.</h1>
+              <p>Join the elite Job-Ready AI Cohort</p>
             </div>
           </div>
           <div className="right">

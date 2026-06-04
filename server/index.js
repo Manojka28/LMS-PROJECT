@@ -7,7 +7,9 @@ import rateLimit from 'express-rate-limit';
 import { connectDB } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import contactRoutes from './routes/contact.js';
+import courseRoutes from './routes/course.js';
 import healthRoutes from './routes/health.js';
+import userRoutes from './routes/user.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -39,6 +41,8 @@ app.use('/api/auth/register', authLimiter);
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/course', courseRoutes);
+app.use('/api/user', userRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
