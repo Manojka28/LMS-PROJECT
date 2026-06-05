@@ -1,7 +1,10 @@
 import express from 'express';
-import { body, param, validationResult } from 'express-validator';
-import { protect, attachUser } from '../middleware/auth.js';
+import { body, param } from 'express-validator';
+
+import { protect, attachUser, optionalAuth } from '../middleware/auth.js';
 import { authorize } from '../middleware/authorize.js';
+import { handleValidation } from '../middleware/validate.js';
+
 import {
   createCourse,
   getCourses,
@@ -9,21 +12,11 @@ import {
   updateCourse,
   deleteCourse,
   enrollInCourse,
+  publishCourse,
+  unpublishCourse,
 } from '../controllers/courseController.js';
 
 const router = express.Router();
-
-function handleValidation(req, res, next) {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: errors.array()[0].msg,
-      errors: errors.array(),
-    });
-  }
-  next();
-}
 
 const lectureRules = [
   body('sections.*.lectures.*.title')
@@ -37,12 +30,11 @@ const lectureRules = [
     .isLength({ max: 5000 })
     .withMessage('Lecture description too long'),
   body('sections.*.lectures.*.videoUrl')
-    .optional()
     .trim()
-    .isLength({ min: 1, max: 500 })
+    .notEmpty()
+    .isLength({ max: 500 })
     .withMessage('Lecture video URL is required'),
   body('sections.*.lectures.*.duration')
-    .optional()
     .isFloat({ min: 0 })
     .withMessage('Lecture duration must be a non-negative number'),
   body('sections.*.lectures.*.resources')
@@ -111,11 +103,6 @@ const updateCourseRules = [
     .optional()
     .isIn(['beginner', 'intermediate', 'advanced', 'all levels'])
     .withMessage('Level must be beginner, intermediate, advanced, or all levels'),
-  body('rating').optional().isFloat({ min: 0, max: 5 }).withMessage('Rating must be between 0 and 5'),
-  body('totalReviews')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('Total reviews must be a non-negative integer'),
   body('instructor')
     .optional()
     .isMongoId()
@@ -133,14 +120,21 @@ router.post(
   createCourse
 );
 
-router.get('/', getCourses);
+router.get('/', optionalAuth, getCourses);
 
-router.get('/:id', param('id').isMongoId().withMessage('Invalid course ID'), handleValidation, getCourseById);
+router.get(
+  '/:id',
+  optionalAuth,
+  param('id').isMongoId().withMessage('Invalid course ID'),
+  handleValidation,
+  getCourseById
+);
 
 router.put(
   '/:id',
   protect,
   attachUser,
+  authorize('instructor', 'admin'),
   param('id').isMongoId().withMessage('Invalid course ID'),
   updateCourseRules,
   handleValidation,
@@ -151,6 +145,7 @@ router.delete(
   '/:id',
   protect,
   attachUser,
+  authorize('instructor', 'admin'),
   param('id').isMongoId().withMessage('Invalid course ID'),
   handleValidation,
   deleteCourse
@@ -163,6 +158,26 @@ router.post(
   param('id').isMongoId().withMessage('Invalid course ID'),
   handleValidation,
   enrollInCourse
+);
+
+router.put(
+  '/:id/publish',
+  protect,
+  attachUser,
+  authorize('instructor', 'admin'),
+  param('id').isMongoId().withMessage('Invalid course ID'),
+  handleValidation,
+  publishCourse
+);
+
+router.put(
+  '/:id/unpublish',
+  protect,
+  attachUser,
+  authorize('instructor', 'admin'),
+  param('id').isMongoId().withMessage('Invalid course ID'),
+  handleValidation,
+  unpublishCourse
 );
 
 export default router;

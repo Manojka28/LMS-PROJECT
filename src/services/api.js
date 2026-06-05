@@ -40,7 +40,22 @@ export async function apiRequest(path, options = {}) {
 }
 
 export const api = {
-  get: (path) => apiRequest(path),
+  get: (path, params) => {
+    let finalPath = path;
+    if (params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, value);
+        }
+      });
+      const qs = searchParams.toString();
+      if (qs) {
+        finalPath += (path.includes('?') ? '&' : '?') + qs;
+      }
+    }
+    return apiRequest(finalPath);
+  },
   post: (path, body) => apiRequest(path, { method: 'POST', body }),
   put: (path, body) => apiRequest(path, { method: 'PUT', body }),
   delete: (path) => apiRequest(path, { method: 'DELETE' }),

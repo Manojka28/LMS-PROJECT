@@ -54,7 +54,12 @@ export default function EditCoursePage() {
       }
     }
 
-    if (user) load();
+    if (!user) {
+      if (!cancelled) setLoading(false);
+      return undefined;
+    }
+
+    load();
     return () => {
       cancelled = true;
     };
@@ -66,6 +71,9 @@ export default function EditCoursePage() {
 
     const validationErrors = validateCourseForm(values);
     setErrors(validationErrors);
+    if (validationErrors.sections) {
+      setFormError(validationErrors.sections);
+    }
     if (Object.keys(validationErrors).length > 0) return;
 
     setSubmitting(true);

@@ -2,7 +2,18 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../services/api';
+import { validateEmailField } from '../utils/validation';
 import MagneticButton from '../components/MagneticButton';
+
+function resolveRedirectPath(user, from) {
+  if (from === '/my-courses' && user.role !== 'student') {
+    return '/dashboard';
+  }
+  if (from.startsWith('/instructor') && !['instructor', 'admin'].includes(user.role)) {
+    return '/dashboard';
+  }
+  return from;
+}
 
 export default function Login() {
   const { login } = useAuth();
@@ -18,8 +29,8 @@ export default function Login() {
 
   const validate = () => {
     const next = {};
-    if (!email.trim()) next.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Enter a valid email';
+    const emailError = validateEmailField(email);
+    if (emailError) next.email = emailError;
     if (!password) next.password = 'Password is required';
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -32,8 +43,8 @@ export default function Login() {
 
     setSubmitting(true);
     try {
-      await login(email.trim(), password);
-      navigate(from, { replace: true });
+      const loggedInUser = await login(email.trim(), password);
+      navigate(resolveRedirectPath(loggedInUser, from), { replace: true });
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : 'Login failed. Try again.');
     } finally {

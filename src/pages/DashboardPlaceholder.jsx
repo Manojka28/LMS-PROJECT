@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import MagneticButton from '../components/MagneticButton';
@@ -7,26 +7,20 @@ import ProgressBar from '../components/ProgressBar';
 
 export default function DashboardPlaceholder() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [progressList, setProgressList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      if (user?.role === 'student') {
-        try {
-          const data = await api.get('/progress');
-          if (!cancelled) setProgressList(data.progress || []);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-      if (!cancelled) setLoading(false);
+    if (user?.role === 'instructor' || user?.role === 'admin') {
+      navigate('/instructor/dashboard', { replace: true });
+      return;
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
+    if (user?.role === 'student') {
+      navigate('/student/dashboard', { replace: true });
+      return;
+    }
+    setLoading(false);
   }, [user]);
 
   const totalCourses = progressList.length;

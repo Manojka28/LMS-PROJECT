@@ -1,31 +1,61 @@
+import mongoose from 'mongoose';
 import Progress from '../models/Progress.js';
 import Course from '../models/Course.js';
+import Section from '../models/Section.js';
+
+const EMPTY_PROGRESS = {
+  completedLectures: [],
+  completionPercentage: 0,
+  completed: false,
+};
+
+function isEnrolled(user, courseId) {
+  return user.purchasedCourses?.some((cId) => cId.toString() === courseId.toString());
+}
+
+async function getCourseLectureIds(courseId) {
+  const sections = await Section.find({ course: courseId }).select('lectures');
+  const ids = new Set();
+  for (const section of sections) {
+    for (const lectureId of section.lectures) {
+      ids.add(lectureId.toString());
+    }
+  }
+  return ids;
+}
+
+function emptyProgressResponse(userId, courseId) {
+  return {
+    user: userId,
+    course: courseId,
+    ...EMPTY_PROGRESS,
+  };
+}
 
 export async function completeLecture(req, res, next) {
   try {
     const { courseId, lectureId } = req.body;
-    if (!courseId || !lectureId) {
-      return res.status(400).json({ success: false, message: 'courseId and lectureId are required' });
+
+    if (!isEnrolled(req.user, courseId)) {
+      return res.status(403).json({ success: false, message: 'Not enrolled in this course' });
     }
 
-    const course = await Course.findById(courseId).populate('sections');
-    if (!course) {
-      return res.status(404).json({ success: false, message: 'Course not found' });
+    const lectureIds = await getCourseLectureIds(courseId);
+    if (!lectureIds.size) {
+      return res.status(400).json({ success: false, message: 'Course has no lectures' });
     }
 
-    // Calculate total lectures
-    let totalLectures = 0;
-    for (const section of course.sections) {
-      totalLectures += section.lectures.length;
+    if (!lectureIds.has(lectureId.toString())) {
+      return res.status(400).json({ success: false, message: 'Lecture does not belong to this course' });
     }
 
-    // Upsert progress
+    const totalLectures = lectureIds.size;
+
     let progress = await Progress.findOne({ user: req.user._id, course: courseId });
     if (!progress) {
       progress = new Progress({ user: req.user._id, course: courseId });
     }
 
-    // Prevent duplicates
     const isCompleted = progress.completedLectures.some(
       (id) => id.toString() === lectureId.toString()
     );
@@ -35,19 +65,11 @@ export async function completeLecture(req, res, next) {
     }
 
     progress.lastViewedLecture = lectureId;
-
-    if (totalLectures > 0) {
-      progress.completionPercentage = Math.min(
-        Math.round((progress.completedLectures.length / totalLectures) * 100),
-        100
-      );
-    } else {
-      progress.completionPercentage = 100;
-    }
-
-    if (progress.completionPercentage === 100) {
-      progress.completed = true;
-    }
+    progress.completionPercentage = Math.min(
+      Math.round((progress.completedLectures.length / totalLectures) * 100),
+      100
+    );
+    progress.completed = progress.completionPercentage === 100;
 
     await progress.save();
 
@@ -60,8 +82,14 @@ export async function completeLecture(req, res, next) {
 export async function updateLastViewed(req, res, next) {
   try {
     const { courseId, lectureId } = req.body;
-    if (!courseId || !lectureId) {
-      return res.status(400).json({ success: false, message: 'courseId and lectureId are required' });
+
+    if (!isEnrolled(req.user, courseId)) {
+      return res.status(403).json({ success: false, message: 'Not enrolled in this course' });
+    }
+
+    const lectureIds = await getCourseLectureIds(courseId);
+    if (!lectureIds.has(lectureId.toString())) {
+      return res.status(400).json({ success: false, message: 'Lecture does not belong to this course' });
     }
 
     let progress = await Progress.findOne({ user: req.user._id, course: courseId });
@@ -80,16 +108,25 @@ export async function updateLastViewed(req, res, next) {
 
 export async function getCourseProgress(req, res, next) {
   try {
-    const progress = await Progress.findOne({
-      user: req.user._id,
-      course: req.params.courseId,
-    });
+    const { courseId } = req.params;
 
-    if (!progress) {
-      return res.status(404).json({ success: false, message: 'Progress not found' });
+    if (!mongoose.isValidObjectId(courseId)) {
+      return res.status(400).json({ success: false, message: 'Invalid course ID' });
     }
 
-    res.json({ success: true, progress });
+    if (!isEnrolled(req.user, courseId)) {
+      return res.status(403).json({ success: false, message: 'Not enrolled in this course' });
+    }
+
+    const progress = await Progress.findOne({
+      user: req.user._id,
+      course: courseId,
+    });
+
+    res.json({
+      success: true,
+      progress: progress ?? emptyProgressResponse(req.user._id, courseId),
+    });
   } catch (err) {
     next(err);
   }

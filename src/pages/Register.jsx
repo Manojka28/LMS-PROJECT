@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../services/api';
+import { validateEmailField, validateNameField } from '../utils/validation';
 import MagneticButton from '../components/MagneticButton';
 
 export default function Register() {
@@ -17,9 +18,10 @@ export default function Register() {
 
   const validate = () => {
     const next = {};
-    if (name.trim().length < 2) next.name = 'Name must be at least 2 characters';
-    if (!email.trim()) next.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Enter a valid email';
+    const nameError = validateNameField(name);
+    if (nameError) next.name = nameError;
+    const emailError = validateEmailField(email);
+    if (emailError) next.email = emailError;
     if (password.length < 6) next.password = 'Password must be at least 6 characters';
     setErrors(next);
     return Object.keys(next).length === 0;

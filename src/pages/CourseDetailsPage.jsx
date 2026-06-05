@@ -2,7 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api, ApiError } from '../services/api';
-import { canEditCourse, formatDuration, formatPrice } from '../utils/courseHelpers';
+import {
+  canEditCourse,
+  formatDuration,
+  formatPrice,
+  getEnrolledCount,
+  isUserEnrolled,
+} from '../utils/courseHelpers';
+import { isSafeHttpUrl } from '../utils/url';
 import CourseNavbar from '../components/CourseNavbar';
 import MagneticButton from '../components/MagneticButton';
 import ProgressBar from '../components/ProgressBar';
@@ -23,9 +30,10 @@ export default function CourseDetailsPage() {
   const [enrolling, setEnrolling] = useState(false);
   const [enrollError, setEnrollError] = useState('');
   const [enrollSuccess, setEnrollSuccess] = useState('');
+  const [progressError, setProgressError] = useState('');
 
   const userId = user?.id || user?._id;
-  const isEnrolled = course && user && course.enrolledStudents?.some(sId => String(sId) === String(userId));
+  const isEnrolled = course && user && isUserEnrolled(course, userId);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,14 +45,20 @@ export default function CourseDetailsPage() {
         const data = await api.get(`/course/${id}`);
         if (!cancelled) setCourse(data.course);
 
-        // Fetch progress if enrolled
-        if (user && data.course.enrolledStudents?.some(sId => String(sId) === String(userId))) {
+        if (user && isUserEnrolled(data.course, userId)) {
           try {
             const progData = await api.get(`/progress/${id}`);
-            if (!cancelled) setProgress(progData.progress);
+            if (!cancelled) {
+              setProgress(progData.progress);
+              setProgressError('');
+            }
           } catch (err) {
-            console.error('Progress fetch error:', err);
-            // Non-blocking error
+            if (!cancelled) {
+              setProgress(null);
+              setProgressError(
+                err instanceof ApiError ? err.message : 'Failed to load course progress.'
+              );
+            }
           }
         }
       } catch (err) {
@@ -79,11 +93,12 @@ export default function CourseDetailsPage() {
       setEnrollSuccess('Successfully enrolled in the course!');
       setCourse((prev) => ({
         ...prev,
-        enrolledStudents: [...(prev.enrolledStudents || []), userId],
+        isEnrolled: true,
+        enrolledCount: getEnrolledCount(prev) + 1,
       }));
-      // Initialize progress
       const progData = await api.get(`/progress/${id}`);
       setProgress(progData.progress);
+      setProgressError('');
     } catch (err) {
       setEnrollError(err instanceof ApiError ? err.message : 'Failed to enroll.');
     } finally {
@@ -93,14 +108,17 @@ export default function CourseDetailsPage() {
 
   const handleCompleteLecture = async (lectureId) => {
     if (!isEnrolled) return;
+    setProgressError('');
     try {
       const data = await api.post('/progress/complete-lecture', {
         courseId: id,
-        lectureId
+        lectureId,
       });
       setProgress(data.progress);
     } catch (err) {
-      console.error('Failed to complete lecture:', err);
+      setProgressError(
+        err instanceof ApiError ? err.message : 'Failed to mark lecture complete.'
+      );
     }
   };
 
@@ -109,11 +127,11 @@ export default function CourseDetailsPage() {
     try {
       const data = await api.post('/progress/update-last-viewed', {
         courseId: id,
-        lectureId
+        lectureId,
       });
       setProgress(data.progress);
-    } catch (err) {
-      console.error('Failed to update last viewed:', err);
+    } catch {
+      // Non-blocking — viewing the lecture should not interrupt the user
     }
   };
 
@@ -184,9 +202,15 @@ export default function CourseDetailsPage() {
                   </div>
                   <div>
                     <h5>Students</h5>
-                    <h4>{course.enrolledStudents?.length ?? 0}</h4>
+                    <h4>{getEnrolledCount(course)}</h4>
                   </div>
                 </div>
+
+                {progressError && (
+                  <p className="field-error" style={{ marginTop: '12px' }}>
+                    {progressError}
+                  </p>
+                )}
 
                 {progress && (
                   <div style={{ marginTop: '20px', marginBottom: '10px' }}>
@@ -269,7 +293,9 @@ export default function CourseDetailsPage() {
                       ) : (
                         <ul className="lecture-list">
                           {section.lectures.map((lecture, lIdx) => {
-                            const isLecCompleted = progress?.completedLectures?.includes(lecture._id);
+                            const isLecCompleted = progress?.completedLectures?.some(
+                              (lecId) => String(lecId) === String(lecture._id)
+                            );
                             return (
                               <li key={lecture._id || lIdx} className="lecture-item" id={`lecture-${lecture._id}`}>
                                 <div className="lecture-item-head">
@@ -296,7 +322,7 @@ export default function CourseDetailsPage() {
                                     </span>
                                   )}
                                 </div>
-                                {lecture.videoUrl && (
+                                {lecture.videoUrl && isSafeHttpUrl(lecture.videoUrl) && (
                                   <a
                                     href={lecture.videoUrl}
                                     target="_blank"
@@ -309,13 +335,15 @@ export default function CourseDetailsPage() {
                                 )}
                                 {lecture.resources?.length > 0 && (
                                   <ul className="lecture-resources">
-                                    {lecture.resources.map((res) => (
-                                      <li key={res._id || res.title}>
-                                        <a href={res.fileUrl} target="_blank" rel="noreferrer">
-                                          {res.title}
-                                        </a>
-                                      </li>
-                                    ))}
+                                    {lecture.resources.map((res) =>
+                                      isSafeHttpUrl(res.fileUrl) ? (
+                                        <li key={res._id || res.title}>
+                                          <a href={res.fileUrl} target="_blank" rel="noreferrer">
+                                            {res.title}
+                                          </a>
+                                        </li>
+                                      ) : null
+                                    )}
                                   </ul>
                                 )}
                               </li>

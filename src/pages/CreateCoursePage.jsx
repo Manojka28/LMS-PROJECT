@@ -11,7 +11,7 @@ import CourseForm from '../components/CourseForm';
 
 export default function CreateCoursePage() {
   const navigate = useNavigate();
-  const [values, setValues] = useState(emptyCourseForm);
+  const [values, setValues] = useState(() => emptyCourseForm());
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -22,6 +22,9 @@ export default function CreateCoursePage() {
 
     const validationErrors = validateCourseForm(values);
     setErrors(validationErrors);
+    if (validationErrors.sections) {
+      setFormError(validationErrors.sections);
+    }
     if (Object.keys(validationErrors).length > 0) return;
 
     setSubmitting(true);

@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 
-const TiltCard = ({ children, className = "", style={} }) => {
+const TiltCard = ({ children, className = '', style = {}, onClick }) => {
   const cardRef = useRef(null);
 
   const handleMouseMove = (e) => {
@@ -23,11 +23,12 @@ const TiltCard = ({ children, className = "", style={} }) => {
   };
 
   return (
-    <div 
-      ref={cardRef} 
+    <div
+      ref={cardRef}
       className={`tilt-element ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onClick={onClick}
       style={style}
     >
       {children}

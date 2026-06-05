@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api, ApiError } from '../services/api';
 import { COURSES } from '../data/courses';
+import { validateEmailField, validateNameField } from '../utils/validation';
 import MagneticButton from '../components/MagneticButton';
 import TiltCard from '../components/TiltCard';
 
@@ -101,9 +102,13 @@ export default function Landing() {
 
   const validateContact = () => {
     const next = {};
-    if (contactForm.name.trim().length < 2) next.name = 'Name must be at least 2 characters';
-    if (!contactForm.email.trim()) next.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactForm.email)) next.email = 'Enter a valid email';
+    const nameError = validateNameField(contactForm.name);
+    if (nameError) next.name = nameError;
+    const emailError = validateEmailField(contactForm.email);
+    if (emailError) next.email = emailError;
+    if (contactForm.message.trim().length > 2000) {
+      next.message = 'Message must be at most 2000 characters';
+    }
     setContactErrors(next);
     return Object.keys(next).length === 0;
   };

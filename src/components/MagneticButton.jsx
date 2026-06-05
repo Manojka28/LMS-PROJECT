@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 
-const MagneticButton = ({ children, className = "", onClick, ...props }) => {
+const MagneticButton = ({ children, className = '', onClick, type = 'button', disabled, ...rest }) => {
   const btnRef = useRef(null);
 
   const handleMouseMove = (e) => {
@@ -18,31 +18,36 @@ const MagneticButton = ({ children, className = "", onClick, ...props }) => {
     }
   };
 
-  const createRipple = (e) => {
+  const handleClick = (e) => {
+    if (disabled) return;
+
     const btn = btnRef.current;
-    if(!btn) return;
-    const x = e.clientX - btn.getBoundingClientRect().left;
-    const y = e.clientY - btn.getBoundingClientRect().top;
-    
-    const ripple = document.createElement('span');
-    ripple.classList.add('ripple');
-    ripple.style.left = x + 'px';
-    ripple.style.top = y + 'px';
-    btn.appendChild(ripple);
-    
-    setTimeout(() => ripple.remove(), 600);
-    
-    if(onClick) onClick(e);
+    if (btn) {
+      const x = e.clientX - btn.getBoundingClientRect().left;
+      const y = e.clientY - btn.getBoundingClientRect().top;
+
+      const ripple = document.createElement('span');
+      ripple.classList.add('ripple');
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      btn.appendChild(ripple);
+
+      setTimeout(() => ripple.remove(), 600);
+    }
+
+    onClick?.(e);
   };
 
   return (
-    <button 
+    <button
       ref={btnRef}
+      type={type}
+      disabled={disabled}
       className={`magnetic-btn ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseOut}
-      onClick={createRipple}
-      {...props}
+      onClick={handleClick}
+      {...rest}
     >
       {children}
     </button>

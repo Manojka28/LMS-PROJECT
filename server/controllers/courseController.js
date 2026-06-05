@@ -1,6 +1,15 @@
+import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import Section from '../models/Section.js';
 import Lecture from '../models/Lecture.js';
+import Progress from '../models/Progress.js';
+import User from '../models/User.js';
+
+const EMPTY_PROGRESS_FOR_ENROLL = {
+  completedLectures: [],
+  completionPercentage: 0,
+  completed: false,
+};
 
 const instructorPopulate = { path: 'instructor', select: 'name email role' };
 const coursePopulate = [
@@ -17,6 +26,40 @@ function canManageCourse(user, course) {
     return true;
   }
   return false;
+}
+
+function serializeCourse(course, user) {
+  const obj = course.toObject();
+  obj.enrolledCount = obj.enrolledStudents?.length ?? 0;
+  delete obj.enrolledStudents;
+
+  if (user) {
+    obj.isEnrolled = user.purchasedCourses?.some(
+      (cId) => cId.toString() === course._id.toString()
+    );
+  }
+
+  const isOwner = user && user.role === 'instructor' && String(obj.instructor?._id) === String(user._id);
+  const isAdmin = user && user.role === 'admin';
+  const hasFullAccess = isAdmin || isOwner || obj.isEnrolled;
+
+  if (obj.instructor && !hasFullAccess) {
+    delete obj.instructor.email;
+  }
+
+  // Strip lecture videoUrl and resources if not fully authorized
+  if (!hasFullAccess && obj.sections) {
+    for (const section of obj.sections) {
+      if (section.lectures) {
+        for (const lecture of section.lectures) {
+          delete lecture.videoUrl;
+          delete lecture.resources;
+        }
+      }
+    }
+  }
+
+  return obj;
 }
 
 async function createSectionsWithLectures(courseId, sectionsInput = []) {
@@ -93,7 +136,7 @@ export async function createCourse(req, res, next) {
     }
 
     const populated = await Course.findById(course._id).populate(coursePopulate);
-    res.status(201).json({ success: true, course: populated });
+    res.status(201).json({ success: true, course: serializeCourse(populated, req.user) });
   } catch (err) {
     next(err);
   }
@@ -102,15 +145,27 @@ export async function createCourse(req, res, next) {
 export async function getCourses(req, res, next) {
   try {
     const filter = {};
+    if (!req.user || req.user.role === 'student') {
+      filter.isPublished = true;
+    }
     if (req.query.category) filter.category = req.query.category;
     if (req.query.level) filter.level = req.query.level;
-    if (req.query.instructor) filter.instructor = req.query.instructor;
+    if (req.query.instructor) {
+      if (!mongoose.isValidObjectId(req.query.instructor)) {
+        return res.status(400).json({ success: false, message: 'Invalid instructor ID' });
+      }
+      filter.instructor = req.query.instructor;
+    }
 
     const courses = await Course.find(filter)
       .populate(instructorPopulate)
       .sort({ createdAt: -1 });
 
-    res.json({ success: true, count: courses.length, courses });
+    res.json({
+      success: true,
+      count: courses.length,
+      courses: courses.map((course) => serializeCourse(course, req.user)),
+    });
   } catch (err) {
     next(err);
   }
@@ -124,7 +179,7 @@ export async function getCourseById(req, res, next) {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
-    res.json({ success: true, course });
+    res.json({ success: true, course: serializeCourse(course, req.user) });
   } catch (err) {
     next(err);
   }
@@ -150,8 +205,6 @@ export async function updateCourse(req, res, next) {
       'price',
       'category',
       'level',
-      'rating',
-      'totalReviews',
     ];
 
     for (const field of allowedFields) {
@@ -173,7 +226,7 @@ export async function updateCourse(req, res, next) {
     await course.save();
 
     const populated = await Course.findById(course._id).populate(coursePopulate);
-    res.json({ success: true, course: populated });
+    res.json({ success: true, course: serializeCourse(populated, req.user) });
   } catch (err) {
     next(err);
   }
@@ -192,6 +245,11 @@ export async function deleteCourse(req, res, next) {
     }
 
     await deleteCourseContent(course);
+    await Progress.deleteMany({ course: course._id });
+    await User.updateMany(
+      { purchasedCourses: course._id },
+      { $pull: { purchasedCourses: course._id } }
+    );
     await Course.findByIdAndDelete(course._id);
 
     res.json({ success: true, message: 'Course deleted successfully' });
@@ -207,26 +265,64 @@ export async function enrollInCourse(req, res, next) {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
-    const user = req.user; // attachUser provides full user from DB
+    const userId = req.user._id;
+    const courseId = course._id;
 
-    // Prevent duplicate enrollment
-    const isEnrolled = user.purchasedCourses.some(
-      (cId) => cId.toString() === course._id.toString()
+    const alreadyEnrolled = req.user.purchasedCourses.some(
+      (cId) => cId.toString() === courseId.toString()
     );
 
-    if (isEnrolled) {
+    if (alreadyEnrolled) {
       return res.status(400).json({ success: false, message: 'Already enrolled in this course' });
     }
 
-    // Add course to user
-    user.purchasedCourses.push(course._id);
-    await user.save();
-
-    // Add user to course
-    course.enrolledStudents.push(user._id);
-    await course.save();
+    await User.findByIdAndUpdate(userId, { $addToSet: { purchasedCourses: courseId } });
+    await Course.findByIdAndUpdate(courseId, { $addToSet: { enrolledStudents: userId } });
+    await Progress.findOneAndUpdate(
+      { user: userId, course: courseId },
+      { $setOnInsert: { ...EMPTY_PROGRESS_FOR_ENROLL } },
+      { upsert: true }
+    );
 
     res.json({ success: true, message: 'Enrolled successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function publishCourse(req, res, next) {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+    if (!canManageCourse(req.user, course)) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    course.isPublished = true;
+    await course.save();
+
+    res.json({ success: true, message: 'Course published successfully', course: serializeCourse(course, req.user) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function unpublishCourse(req, res, next) {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+    if (!canManageCourse(req.user, course)) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    course.isPublished = false;
+    await course.save();
+
+    res.json({ success: true, message: 'Course unpublished successfully', course: serializeCourse(course, req.user) });
   } catch (err) {
     next(err);
   }

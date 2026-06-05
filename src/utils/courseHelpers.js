@@ -4,6 +4,18 @@ export function getInstructorId(instructor) {
   return instructor._id || instructor.id || null;
 }
 
+export function isUserEnrolled(course, userId) {
+  if (!course || !userId) return false;
+  if (typeof course.isEnrolled === 'boolean') return course.isEnrolled;
+  return course.enrolledStudents?.some((sId) => String(sId) === String(userId)) ?? false;
+}
+
+export function getEnrolledCount(course) {
+  if (!course) return 0;
+  if (typeof course.enrolledCount === 'number') return course.enrolledCount;
+  return course.enrolledStudents?.length ?? 0;
+}
+
 export function canEditCourse(user, course) {
   if (!user || !course) return false;
   if (user.role === 'admin') return true;
@@ -93,12 +105,15 @@ export function formValuesToPayload(values) {
       title: section.title.trim(),
       lectures: (section.lectures || [])
         .filter((l) => l.title.trim() && l.videoUrl.trim())
-        .map((lecture) => ({
-          title: lecture.title.trim(),
-          description: lecture.description?.trim() || '',
-          videoUrl: lecture.videoUrl.trim(),
-          duration: Number(lecture.duration),
-        })),
+        .map((lecture) => {
+          const duration = Number(lecture.duration);
+          return {
+            title: lecture.title.trim(),
+            description: lecture.description?.trim() || '',
+            videoUrl: lecture.videoUrl.trim(),
+            duration: Number.isFinite(duration) ? duration : 0,
+          };
+        }),
     }));
 
   return {
@@ -140,6 +155,22 @@ export function validateCourseForm(values) {
 
   if (!LEVELS.includes(values.level)) {
     errors.level = 'Select a valid level';
+  }
+
+  const hasValidSection = (values.sections || []).some((section) => {
+    if (!section.title?.trim()) return false;
+    return (section.lectures || []).some(
+      (lecture) =>
+        lecture.title?.trim() &&
+        lecture.videoUrl?.trim() &&
+        lecture.duration !== '' &&
+        !Number.isNaN(Number(lecture.duration)) &&
+        Number(lecture.duration) >= 0
+    );
+  });
+
+  if (!hasValidSection) {
+    errors.sections = 'Add at least one section with a title and one complete lecture';
   }
 
   (values.sections || []).forEach((section, sIdx) => {

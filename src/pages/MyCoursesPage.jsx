@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../services/api';
 import CourseNavbar from '../components/CourseNavbar';
 import TiltCard from '../components/TiltCard';
@@ -10,6 +10,7 @@ const PLACEHOLDER_IMG =
   'https://images.unsplash.com/photo-1516321318423-f06f868dfd4d?q=80&w=800&auto=format&fit=crop';
 
 export default function MyCoursesPage() {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [progressData, setProgressData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -135,12 +136,18 @@ export default function MyCoursesPage() {
                     <ProgressBar percentage={prog?.completionPercentage || 0} />
 
                     <div className="course-footer" style={{ justifyContent: 'flex-end', marginTop: '15px' }}>
-                      <Link to={`/courses/${course._id}`} style={{ textDecoration: 'none' }}>
-                        <MagneticButton className="green-btn-sm ripple-btn" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                           <i className={isCompleted ? "ri-refresh-line" : "ri-play-circle-fill"} /> 
-                           {isCompleted ? 'Review Course' : (prog?.completionPercentage > 0 ? 'Continue Learning' : 'Start Learning')}
-                        </MagneticButton>
-                      </Link>
+                      <MagneticButton
+                        className="green-btn-sm ripple-btn"
+                        style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                        onClick={() => navigate(`/courses/${course._id}`)}
+                      >
+                        <i className={isCompleted ? 'ri-refresh-line' : 'ri-play-circle-fill'} />
+                        {isCompleted
+                          ? 'Review Course'
+                          : prog?.completionPercentage > 0
+                            ? 'Continue Learning'
+                            : 'Start Learning'}
+                      </MagneticButton>
                     </div>
                   </div>
                 </TiltCard>

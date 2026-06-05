@@ -1,6 +1,7 @@
 import express from 'express';
-import { param, body, validationResult } from 'express-validator';
+import { param, body } from 'express-validator';
 import { protect, attachUser } from '../middleware/auth.js';
+import { handleValidation } from '../middleware/validate.js';
 import {
   completeLecture,
   updateLastViewed,
@@ -10,28 +11,9 @@ import {
 
 const router = express.Router();
 
-function handleValidation(req, res, next) {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: errors.array()[0].msg,
-      errors: errors.array(),
-    });
-  }
-  next();
-}
-
 router.use(protect, attachUser);
 
 router.get('/', getAllProgress);
-
-router.get(
-  '/:courseId',
-  param('courseId').isMongoId().withMessage('Invalid course ID'),
-  handleValidation,
-  getCourseProgress
-);
 
 router.post(
   '/complete-lecture',
@@ -47,6 +29,13 @@ router.post(
   body('lectureId').isMongoId().withMessage('Invalid lecture ID'),
   handleValidation,
   updateLastViewed
+);
+
+router.get(
+  '/:courseId',
+  param('courseId').isMongoId().withMessage('Invalid course ID'),
+  handleValidation,
+  getCourseProgress
 );
 
 export default router;
