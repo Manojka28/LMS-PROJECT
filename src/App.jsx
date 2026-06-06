@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { WishlistProvider } from './context/WishlistContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
@@ -15,13 +16,17 @@ import MyCoursesPage from './pages/MyCoursesPage';
 import InstructorDashboard from './pages/InstructorDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import CoursePlayerPage from './pages/CoursePlayerPage';
+import AdminDashboard from './pages/AdminDashboard';
+import WishlistPage from './pages/WishlistPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
+        <WishlistProvider>
+          <BrowserRouter>
+            <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -40,6 +45,22 @@ function App() {
               element={
                 <ProtectedRoute roles={['student']}>
                   <MyCoursesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wishlist"
+              element={
+                <ProtectedRoute roles={['student']}>
+                  <WishlistPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <NotificationsPage />
                 </ProtectedRoute>
               }
             />
@@ -76,6 +97,14 @@ function App() {
               }
             />
             <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
@@ -83,8 +112,9 @@ function App() {
                 </ProtectedRoute>
               }
             />
-          </Routes>
-        </BrowserRouter>
+            </Routes>
+          </BrowserRouter>
+        </WishlistProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

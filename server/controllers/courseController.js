@@ -4,6 +4,10 @@ import Section from '../models/Section.js';
 import Lecture from '../models/Lecture.js';
 import Progress from '../models/Progress.js';
 import User from '../models/User.js';
+import Review from '../models/Review.js';
+import Wishlist from '../models/Wishlist.js';
+import Notification from '../models/Notification.js';
+import Quiz from '../models/Quiz.js';
 
 const EMPTY_PROGRESS_FOR_ENROLL = {
   completedLectures: [],
@@ -179,7 +183,24 @@ export async function getCourseById(req, res, next) {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
-    res.json({ success: true, course: serializeCourse(course, req.user) });
+    const serialized = serializeCourse(course, req.user);
+    
+    // If the user is an instructor/admin, attach hasQuiz to each lecture
+    if (req.user && (req.user.role === 'instructor' || req.user.role === 'admin')) {
+      const quizzes = await Quiz.find({ course: course._id }).select('lecture').lean();
+      const quizLectureIds = new Set(quizzes.map(q => q.lecture.toString()));
+      if (serialized.sections) {
+        serialized.sections.forEach(section => {
+          if (section.lectures) {
+            section.lectures.forEach(lecture => {
+              lecture.hasQuiz = quizLectureIds.has(lecture._id.toString());
+            });
+          }
+        });
+      }
+    }
+
+    res.json({ success: true, course: serialized });
   } catch (err) {
     next(err);
   }
@@ -226,6 +247,19 @@ export async function updateCourse(req, res, next) {
     await course.save();
 
     const populated = await Course.findById(course._id).populate(coursePopulate);
+    
+    // Check if sections changed/added to notify enrolled students
+    if (Array.isArray(req.body.sections) && course.enrolledStudents && course.enrolledStudents.length > 0) {
+      const notifs = course.enrolledStudents.map(studentId => ({
+        userId: studentId,
+        type: 'NEW_LECTURE_ADDED',
+        title: 'Course Updated',
+        message: `New content has been added to ${course.title}.`,
+        link: `/courses/${course._id}`
+      }));
+      await Notification.insertMany(notifs);
+    }
+
     res.json({ success: true, course: serializeCourse(populated, req.user) });
   } catch (err) {
     next(err);
@@ -246,6 +280,7 @@ export async function deleteCourse(req, res, next) {
 
     await deleteCourseContent(course);
     await Progress.deleteMany({ course: course._id });
+    await Wishlist.deleteMany({ course: course._id });
     await User.updateMany(
       { purchasedCourses: course._id },
       { $pull: { purchasedCourses: course._id } }
@@ -284,6 +319,14 @@ export async function enrollInCourse(req, res, next) {
       { upsert: true }
     );
 
+    await Notification.create({
+      userId: userId,
+      type: 'COURSE_ENROLLED',
+      title: 'Course Enrolled',
+      message: `You are now enrolled in ${course.title}.`,
+      link: `/courses/${courseId}`
+    });
+
     res.json({ success: true, message: 'Enrolled successfully' });
   } catch (err) {
     next(err);
@@ -302,6 +345,19 @@ export async function publishCourse(req, res, next) {
 
     course.isPublished = true;
     await course.save();
+
+    // Notify all students
+    const students = await User.find({ role: 'student' }).select('_id');
+    if (students.length > 0) {
+      const notifs = students.map(student => ({
+        userId: student._id,
+        type: 'NEW_COURSE_PUBLISHED',
+        title: 'New Course Published',
+        message: `${course.title} is now available!`,
+        link: `/courses/${course._id}`
+      }));
+      await Notification.insertMany(notifs);
+    }
 
     res.json({ success: true, message: 'Course published successfully', course: serializeCourse(course, req.user) });
   } catch (err) {
@@ -323,6 +379,113 @@ export async function unpublishCourse(req, res, next) {
     await course.save();
 
     res.json({ success: true, message: 'Course unpublished successfully', course: serializeCourse(course, req.user) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function recalculateCourseRating(courseId) {
+  const result = await Review.aggregate([
+    { $match: { course: new mongoose.Types.ObjectId(courseId) } },
+    { $group: { _id: null, avgRating: { $avg: '$rating' }, totalReviews: { $sum: 1 } } }
+  ]);
+
+  if (result.length > 0) {
+    await Course.findByIdAndUpdate(courseId, {
+      rating: Math.round(result[0].avgRating * 10) / 10,
+      totalReviews: result[0].totalReviews
+    });
+  } else {
+    await Course.findByIdAndUpdate(courseId, { rating: 0, totalReviews: 0 });
+  }
+}
+
+export async function getCourseReviews(req, res, next) {
+  try {
+    const reviews = await Review.find({ course: req.params.id })
+      .populate('user', 'name')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, reviews });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function addReview(req, res, next) {
+  try {
+    const { rating, review } = req.body;
+    const courseId = req.params.id;
+    const userId = req.user._id;
+
+    if (!mongoose.isValidObjectId(courseId)) {
+      return res.status(400).json({ success: false, message: 'Invalid course ID' });
+    }
+
+    const isEnrolled = req.user.purchasedCourses?.some((c) => c.toString() === courseId.toString());
+    if (!isEnrolled) {
+      return res.status(403).json({ success: false, message: 'Only enrolled students can leave a review' });
+    }
+
+    const existingReview = await Review.findOne({ user: userId, course: courseId });
+    if (existingReview) {
+      return res.status(400).json({ success: false, message: 'You have already reviewed this course' });
+    }
+
+    const newReview = await Review.create({
+      user: userId,
+      course: courseId,
+      rating: Number(rating),
+      review
+    });
+
+    await recalculateCourseRating(courseId);
+
+    await newReview.populate('user', 'name');
+    res.status(201).json({ success: true, review: newReview });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateReview(req, res, next) {
+  try {
+    const { rating, review } = req.body;
+    const courseId = req.params.id;
+    const userId = req.user._id;
+
+    const existingReview = await Review.findOne({ user: userId, course: courseId });
+    if (!existingReview) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+
+    if (rating !== undefined) existingReview.rating = Number(rating);
+    if (review !== undefined) existingReview.review = review;
+
+    await existingReview.save();
+    await recalculateCourseRating(courseId);
+
+    await existingReview.populate('user', 'name');
+    res.json({ success: true, review: existingReview });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteReview(req, res, next) {
+  try {
+    const courseId = req.params.id;
+    const userId = req.user._id;
+
+    const existingReview = await Review.findOne({ user: userId, course: courseId });
+    if (!existingReview) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+
+    await existingReview.deleteOne();
+    await recalculateCourseRating(courseId);
+
+    res.json({ success: true, message: 'Review deleted successfully' });
   } catch (err) {
     next(err);
   }

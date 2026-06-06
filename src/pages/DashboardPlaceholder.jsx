@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getDashboardPath } from '../utils/navigation';
 import { api } from '../services/api';
 import MagneticButton from '../components/MagneticButton';
 import ProgressBar from '../components/ProgressBar';
@@ -12,12 +13,8 @@ export default function DashboardPlaceholder() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.role === 'instructor' || user?.role === 'admin') {
-      navigate('/instructor/dashboard', { replace: true });
-      return;
-    }
-    if (user?.role === 'student') {
-      navigate('/student/dashboard', { replace: true });
+    if (user?.role) {
+      navigate(getDashboardPath(user.role), { replace: true });
       return;
     }
     setLoading(false);

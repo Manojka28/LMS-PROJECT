@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api, ApiError } from '../services/api';
+import { getDashboardPath } from '../utils/navigation';
 import { COURSES } from '../data/courses';
 import { validateEmailField, validateNameField } from '../utils/validation';
 import MagneticButton from '../components/MagneticButton';
@@ -9,15 +10,14 @@ import TiltCard from '../components/TiltCard';
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [searchActive, setSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showCohortModal, setShowCohortModal] = useState(false);
   const [faqOpen, setFaqOpen] = useState(null);
 
@@ -88,16 +88,13 @@ export default function Landing() {
 
   const handleSignIn = () => {
     setMobileMenuOpen(false);
-    navigate(isAuthenticated ? '/dashboard' : '/login');
+    navigate(isAuthenticated ? getDashboardPath(user?.role) : '/login');
   };
 
-  const handleNotifBell = () => {
-    setShowNotifDropdown((v) => !v);
-    if (notifications.length === 0) {
-      setNotifications([
-        { id: Date.now(), text: 'Welcome to IIITL Coding School! Sign in to unlock your dashboard.' },
-      ]);
-    }
+  const handleLogout = async () => {
+    setShowUserDropdown(false);
+    await logout();
+    navigate('/login');
   };
 
   const validateContact = () => {
@@ -202,36 +199,42 @@ export default function Landing() {
                 onKeyDown={(e) => e.key === 'Enter' && setSearchActive(!searchActive)}
               />
             </div>
-            <div className="notification-container">
-              <i
-                className="ri-notification-2-fill"
-                role="button"
-                tabIndex={0}
-                aria-label="Notifications"
-                onClick={handleNotifBell}
-              />
-              {notifications.length > 0 && <div className="badge">{notifications.length}</div>}
-              {showNotifDropdown && (
-                <div className="notif-dropdown">
-                  {notifications.length === 0 ? (
-                    <p className="empty-msg">No new notifications</p>
-                  ) : (
-                    notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className="notif-item"
-                        onClick={() => setNotifications(notifications.filter((item) => item.id !== n.id))}
-                      >
-                        {n.text}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
             {isAuthenticated ? (
-              <div className="nav-avatar" title={user.name}>
-                {user.name.charAt(0).toUpperCase()}
+              <div className="user-dropdown-container" style={{ position: 'relative' }}>
+                <div 
+                  className="nav-avatar" 
+                  title={user.name} 
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                {showUserDropdown && (
+                  <div className="user-dropdown" style={{ 
+                    position: 'absolute', right: 0, top: '50px', background: '#1a1a1a', 
+                    border: '1px solid #333', borderRadius: '8px', padding: '15px', 
+                    width: '220px', zIndex: 100, boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                  }}>
+                    <div style={{ borderBottom: '1px solid #333', paddingBottom: '10px', marginBottom: '10px' }}>
+                      <h4 style={{ margin: 0, color: '#fff', fontSize: '16px' }}>{user.name}</h4>
+                      <p style={{ margin: '5px 0 0', color: '#888', fontSize: '13px', wordBreak: 'break-all' }}>{user.email}</p>
+                      <p style={{ margin: '5px 0 0', color: '#27ae60', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>{user.role}</p>
+                    </div>
+                    <Link 
+                      to={getDashboardPath(user?.role)} 
+                      style={{ display: 'block', padding: '8px 0', color: '#ddd', textDecoration: 'none', fontSize: '14px' }}
+                      onClick={() => setShowUserDropdown(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <button 
+                      onClick={handleLogout}
+                      style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 0', background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <img src="/logos/iiitl-logo.svg" alt="Guest" />

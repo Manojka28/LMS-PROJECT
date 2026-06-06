@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, minlength: 6, select: false },
     role: { type: String, enum: ['student', 'instructor', 'admin'], default: 'student' },
     purchasedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

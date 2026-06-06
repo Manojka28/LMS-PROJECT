@@ -186,7 +186,21 @@ export default function CourseForm({
             {section.lectures.map((lecture, lIdx) => (
               <div key={lIdx} className="course-form-lecture">
                 <div className="course-form-section-header">
-                  <h4>Lecture {lIdx + 1}</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h4 style={{ margin: 0 }}>Lecture {lIdx + 1}</h4>
+                    {lecture._id && (
+                      <span style={{ 
+                        fontSize: '12px', 
+                        padding: '2px 8px', 
+                        borderRadius: '12px', 
+                        background: lecture.hasQuiz ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        color: lecture.hasQuiz ? '#10b981' : '#ef4444',
+                        border: `1px solid ${lecture.hasQuiz ? '#10b981' : '#ef4444'}`
+                      }}>
+                        Quiz Attached: {lecture.hasQuiz ? 'Yes' : 'No'}
+                      </span>
+                    )}
+                  </div>
                   {section.lectures.length > 1 && (
                     <button
                       type="button"

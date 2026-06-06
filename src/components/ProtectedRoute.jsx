@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getDashboardPath } from '../utils/navigation';
 
 function fullPath(location) {
   return `${location.pathname}${location.search}${location.hash}`;
@@ -24,7 +25,7 @@ export default function ProtectedRoute({ children, roles }) {
   }
 
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getDashboardPath(user.role)} replace />;
   }
 
   return children;

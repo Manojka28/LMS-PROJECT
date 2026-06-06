@@ -14,6 +14,10 @@ import {
   enrollInCourse,
   publishCourse,
   unpublishCourse,
+  getCourseReviews,
+  addReview,
+  updateReview,
+  deleteReview,
 } from '../controllers/courseController.js';
 
 const router = express.Router();
@@ -130,11 +134,14 @@ router.get(
   getCourseById
 );
 
+router.get('/:id/reviews', getCourseReviews);
+
+router.post('/:id/review', protect, attachUser, addReview);
+router.put('/:id/review', protect, attachUser, updateReview);
+router.delete('/:id/review', protect, attachUser, deleteReview);
+
 router.put(
   '/:id',
-  protect,
-  attachUser,
-  authorize('instructor', 'admin'),
   param('id').isMongoId().withMessage('Invalid course ID'),
   updateCourseRules,
   handleValidation,

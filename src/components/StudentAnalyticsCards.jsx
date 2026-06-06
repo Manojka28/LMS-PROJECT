@@ -1,10 +1,14 @@
 import React from 'react';
 
-export default function StudentAnalyticsCards({ totalEnrolled, completedCourses, averageProgress }) {
+export default function StudentAnalyticsCards({ analytics }) {
+  if (!analytics) return null;
   const cards = [
-    { label: 'Total Enrolled', value: totalEnrolled, icon: 'fa-book-open', color: '#3b82f6' },
-    { label: 'Completed Courses', value: completedCourses, icon: 'fa-certificate', color: '#10b981' },
-    { label: 'Average Progress', value: `${averageProgress}%`, icon: 'fa-chart-line', color: '#8b5cf6' },
+    { label: 'Total Enrolled', value: analytics.totalEnrolled || 0, icon: 'ri-book-open-fill', color: '#3b82f6' },
+    { label: 'Completed Courses', value: analytics.completedCourses || 0, icon: 'ri-checkbox-circle-fill', color: '#10b981' },
+    { label: 'Average Progress', value: `${analytics.averageProgress || 0}%`, icon: 'ri-pie-chart-2-fill', color: '#8b5cf6' },
+    { label: 'Learning Streak', value: `${analytics.learningStreak || 0} Days`, icon: 'ri-fire-fill', color: '#f59e0b' },
+    { label: 'Hours Studied', value: `${analytics.hoursStudied || 0} hrs`, icon: 'ri-time-fill', color: '#ec4899' },
+    { label: 'Certificates Earned', value: analytics.certificatesEarned || 0, icon: 'ri-award-fill', color: '#14b8a6' },
   ];
 
   return (
@@ -12,7 +16,7 @@ export default function StudentAnalyticsCards({ totalEnrolled, completedCourses,
       {cards.map((card, i) => (
         <div key={i} style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '12px', padding: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: `${card.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.color, fontSize: '24px' }}>
-            <i className={`fas ${card.icon}`}></i>
+            <i className={card.icon}></i>
           </div>
           <div>
             <div style={{ color: '#888', fontSize: '14px', marginBottom: '4px' }}>{card.label}</div>

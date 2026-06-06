@@ -12,13 +12,17 @@ export class ApiError extends Error {
 export async function apiRequest(path, options = {}) {
   const { body, headers, ...rest } = options;
 
+  const isFormData = body instanceof FormData;
+
+  const finalHeaders = { ...headers };
+  if (body !== undefined && !isFormData && !finalHeaders['Content-Type']) {
+    finalHeaders['Content-Type'] = 'application/json';
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
-    headers: {
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      ...headers,
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    headers: finalHeaders,
+    body: isFormData ? body : (body !== undefined ? JSON.stringify(body) : undefined),
     ...rest,
   });
 
@@ -58,5 +62,6 @@ export const api = {
   },
   post: (path, body) => apiRequest(path, { method: 'POST', body }),
   put: (path, body) => apiRequest(path, { method: 'PUT', body }),
+  patch: (path, body) => apiRequest(path, { method: 'PATCH', body }),
   delete: (path) => apiRequest(path, { method: 'DELETE' }),
 };

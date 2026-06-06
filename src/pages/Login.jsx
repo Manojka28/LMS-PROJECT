@@ -3,15 +3,28 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../services/api';
 import { validateEmailField } from '../utils/validation';
+import { getDashboardPath } from '../utils/navigation';
 import MagneticButton from '../components/MagneticButton';
 
 function resolveRedirectPath(user, from) {
+  // If no specific page was requested, always go to the role home
+  if (!from || from === '/' || from === '/login' || from === '/register') {
+    return getDashboardPath(user.role);
+  }
+
+  // Block student from instructor routes
+  if (from.startsWith('/instructor') && user.role === 'student') {
+    return ROLE_HOME[user.role];
+  }
+  // Block student from admin routes
+  if (from.startsWith('/admin') && user.role !== 'admin') {
+    return ROLE_HOME[user.role];
+  }
+  // Block admin from student-only routes
   if (from === '/my-courses' && user.role !== 'student') {
-    return '/dashboard';
+    return ROLE_HOME[user.role];
   }
-  if (from.startsWith('/instructor') && !['instructor', 'admin'].includes(user.role)) {
-    return '/dashboard';
-  }
+
   return from;
 }
 

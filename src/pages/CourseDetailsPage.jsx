@@ -13,6 +13,7 @@ import { isSafeHttpUrl } from '../utils/url';
 import CourseNavbar from '../components/CourseNavbar';
 import MagneticButton from '../components/MagneticButton';
 import ProgressBar from '../components/ProgressBar';
+import { useWishlist } from '../context/WishlistContext';
 
 const PLACEHOLDER_IMG =
   'https://images.unsplash.com/photo-1516321318423-f06f868dfd4d?q=80&w=1200&auto=format&fit=crop';
@@ -21,6 +22,7 @@ export default function CourseDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isWishlisted, toggleWishlist } = useWishlist();
 
   const [course, setCourse] = useState(null);
   const [progress, setProgress] = useState(null);
@@ -31,6 +33,12 @@ export default function CourseDetailsPage() {
   const [enrollError, setEnrollError] = useState('');
   const [enrollSuccess, setEnrollSuccess] = useState('');
   const [progressError, setProgressError] = useState('');
+
+  const [reviews, setReviews] = useState([]);
+  const [myReview, setMyReview] = useState(null);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, review: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
   const userId = user?.id || user?._id;
   const isEnrolled = course && user && isUserEnrolled(course, userId);
@@ -44,6 +52,20 @@ export default function CourseDetailsPage() {
       try {
         const data = await api.get(`/course/${id}`);
         if (!cancelled) setCourse(data.course);
+
+        try {
+          const revData = await api.get(`/course/${id}/reviews`);
+          if (!cancelled) {
+            setReviews(revData.reviews);
+            const userRev = revData.reviews.find(r => r.user?._id === userId || r.user === userId);
+            if (userRev) {
+              setMyReview(userRev);
+              setReviewForm({ rating: userRev.rating, review: userRev.review });
+            }
+          }
+        } catch (e) {
+          console.error('Failed to load reviews', e);
+        }
 
         if (user && isUserEnrolled(data.course, userId)) {
           try {
@@ -80,6 +102,17 @@ export default function CourseDetailsPage() {
 
   const editable = course && user && canEditCourse(user, course);
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true); // already loaded
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handleEnroll = async () => {
     if (!user) {
       navigate('/login');
@@ -88,23 +121,101 @@ export default function CourseDetailsPage() {
     setEnrolling(true);
     setEnrollError('');
     setEnrollSuccess('');
+
     try {
-      await api.post(`/course/${id}/enroll`);
-      setEnrollSuccess('Successfully enrolled in the course!');
-      setCourse((prev) => ({
-        ...prev,
-        isEnrolled: true,
-        enrolledCount: getEnrolledCount(prev) + 1,
-      }));
-      const progData = await api.get(`/progress/${id}`);
-      setProgress(progData.progress);
-      setProgressError('');
+      if (course.price > 0) {
+        // Step 1: Create order (works in both dev and real mode)
+        const orderData = await api.post('/payment/create-order', { courseId: id });
+
+        if (!orderData.success) {
+          throw new Error(orderData.message || 'Failed to create payment order');
+        }
+
+        if (orderData.devMode) {
+          // ── DEV MODE: no popup, simulate payment instantly ──────────────────
+          setEnrollSuccess('Processing payment...');
+          await new Promise(r => setTimeout(r, 800)); // brief visual feedback
+
+          await api.post('/payment/dev-purchase', {
+            orderId: orderData.orderId,
+            courseId: id
+          });
+
+          setEnrollSuccess('✓ Payment simulated! You are now enrolled. [DEV MODE]');
+          setCourse((prev) => ({
+            ...prev,
+            isEnrolled: true,
+            enrolledCount: getEnrolledCount(prev) + 1,
+          }));
+          const progData = await api.get(`/progress/${id}`);
+          setProgress(progData.progress);
+
+        } else {
+          // ── REAL RAZORPAY MODE ───────────────────────────────────────────────
+          const isScriptLoaded = await loadRazorpayScript();
+          if (!isScriptLoaded) {
+            throw new Error('Razorpay SDK failed to load. Are you online?');
+          }
+
+          const options = {
+            key: orderData.key,
+            amount: orderData.amount,
+            currency: orderData.currency,
+            name: 'Antigravity LMS',
+            description: `Purchase: ${course.title}`,
+            order_id: orderData.orderId,
+            handler: async function (response) {
+              try {
+                await api.post('/payment/verify', {
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_signature: response.razorpay_signature,
+                  courseId: id
+                });
+                setEnrollSuccess('Payment successful! You are now enrolled.');
+                setCourse((prev) => ({
+                  ...prev,
+                  isEnrolled: true,
+                  enrolledCount: getEnrolledCount(prev) + 1,
+                }));
+                const progData = await api.get(`/progress/${id}`);
+                setProgress(progData.progress);
+              } catch (err) {
+                setEnrollError(err instanceof ApiError ? err.message : 'Payment verification failed.');
+              }
+            },
+            prefill: {
+              name: user.name,
+              email: user.email,
+            },
+            theme: { color: '#3b82f6' }
+          };
+
+          const rzp = new window.Razorpay(options);
+          rzp.on('payment.failed', function (response) {
+            setEnrollError(`Payment failed: ${response.error.description}`);
+          });
+          rzp.open();
+        }
+      } else {
+        // Free course enrollment
+        await api.post(`/course/${id}/enroll`);
+        setEnrollSuccess('Successfully enrolled in the course!');
+        setCourse((prev) => ({
+          ...prev,
+          isEnrolled: true,
+          enrolledCount: getEnrolledCount(prev) + 1,
+        }));
+        const progData = await api.get(`/progress/${id}`);
+        setProgress(progData.progress);
+      }
     } catch (err) {
-      setEnrollError(err instanceof ApiError ? err.message : 'Failed to enroll.');
+      setEnrollError(err instanceof ApiError ? err.message : 'Failed to process enrollment.');
     } finally {
       setEnrolling(false);
     }
   };
+
 
   const handleCompleteLecture = async (lectureId) => {
     if (!isEnrolled) return;
@@ -132,6 +243,43 @@ export default function CourseDetailsPage() {
       setProgress(data.progress);
     } catch {
       // Non-blocking — viewing the lecture should not interrupt the user
+    }
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingReview(true);
+    setReviewError('');
+    try {
+      if (myReview) {
+        const res = await api.put(`/course/${id}/review`, reviewForm);
+        setMyReview(res.review);
+        setReviews(reviews.map(r => r._id === res.review._id ? res.review : r));
+      } else {
+        const res = await api.post(`/course/${id}/review`, reviewForm);
+        setMyReview(res.review);
+        setReviews([res.review, ...reviews]);
+      }
+      const newCourseData = await api.get(`/course/${id}`);
+      setCourse(newCourseData.course);
+    } catch (err) {
+      setReviewError(err.message || 'Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleDeleteReview = async () => {
+    if (!window.confirm('Are you sure you want to delete your review?')) return;
+    try {
+      await api.delete(`/course/${id}/review`);
+      setMyReview(null);
+      setReviewForm({ rating: 5, review: '' });
+      setReviews(reviews.filter(r => r._id !== myReview._id));
+      const newCourseData = await api.get(`/course/${id}`);
+      setCourse(newCourseData.course);
+    } catch (err) {
+      alert('Failed to delete review');
     }
   };
 
@@ -260,8 +408,33 @@ export default function CourseDetailsPage() {
                       onClick={handleEnroll}
                       disabled={enrolling}
                     >
-                      {enrolling ? 'Enrolling...' : 'Enroll Now'}
+                      {enrolling
+                        ? enrollSuccess.includes('Processing') ? 'Simulating...' : 'Enrolling...'
+                        : course.price > 0 ? `Buy Now — ₹${course.price}` : 'Enroll Now'}
                     </MagneticButton>
+                    <button
+                      className="ripple-btn"
+                      onClick={() => toggleWishlist(course._id)}
+                      style={{ 
+                        background: 'transparent',
+                        border: '1px solid #444', 
+                        color: isWishlisted(course._id) ? '#ef4444' : '#fff',
+                        padding: '12px 24px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        fontWeight: 'bold',
+                        transition: 'border-color 0.2s, color 0.2s'
+                      }}
+                      onMouseOver={(e) => { e.currentTarget.style.borderColor = '#666'; }}
+                      onMouseOut={(e) => { e.currentTarget.style.borderColor = '#444'; }}
+                    >
+                      <i className={isWishlisted(course._id) ? "ri-heart-3-fill" : "ri-heart-3-line"} />
+                      {isWishlisted(course._id) ? 'Remove from Wishlist' : 'Save to Wishlist'}
+                    </button>
                     {enrollError && <span className="field-error">{enrollError}</span>}
                     {enrollSuccess && <span className="form-alert-success" style={{ padding: '8px', borderRadius: '4px', border: '1px solid #00D26A' }}>{enrollSuccess}</span>}
                   </div>

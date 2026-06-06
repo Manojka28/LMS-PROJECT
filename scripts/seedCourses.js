@@ -6,6 +6,10 @@ import Section from '../server/models/Section.js';
 import Lecture from '../server/models/Lecture.js';
 import User from '../server/models/User.js';
 import Progress from '../server/models/Progress.js';
+import Quiz from '../server/models/Quiz.js';
+import QuizAttempt from '../server/models/QuizAttempt.js';
+import Assignment from '../server/models/Assignment.js';
+import AssignmentSubmission from '../server/models/AssignmentSubmission.js';
 
 const coursesData = [
   // Original 10
@@ -66,6 +70,10 @@ async function seed() {
     await Section.deleteMany({});
     await Lecture.deleteMany({});
     await Progress.deleteMany({});
+    await Quiz.deleteMany({});
+    await QuizAttempt.deleteMany({});
+    await Assignment.deleteMany({});
+    await AssignmentSubmission.deleteMany({});
 
     console.log('Inserting courses...');
     let addedCount = 0;
@@ -222,6 +230,77 @@ async function seed() {
       }
       await student.save();
       console.log(`Enrolled student@test.com into ${progressCount} courses`);
+      
+      // Seed Quizzes for the enrolled courses
+      console.log('Seeding Quizzes...');
+      let quizCount = 0;
+      for (let i = 0; i < 5 && i < coursesToEnroll.length; i++) {
+        const course = coursesToEnroll[i];
+        const sectionId = course.sections[0];
+        const section = await Section.findById(sectionId);
+        if (section && section.lectures.length > 0) {
+          const lectureId = section.lectures[0]; // First lecture
+          
+          const questions = [];
+          for(let q = 1; q <= 10; q++) {
+            questions.push({
+              questionText: `Sample Question ${q} for Course ${course.title}?`,
+              options: ['Option A', 'Option B', 'Option C', 'Option D'],
+              correctAnswer: Math.floor(Math.random() * 4),
+              explanation: `This is the explanation for question ${q}.`
+            });
+          }
+          
+          await Quiz.create({
+            course: course._id,
+            lecture: lectureId,
+            questions
+          });
+          quizCount++;
+        }
+      }
+      console.log(`Created ${quizCount} quizzes with 10 questions each.`);
+
+      console.log('Seeding Assignments...');
+      let assignmentCount = 0;
+      for (let i = 0; i < 5 && i < coursesToEnroll.length; i++) {
+        const course = coursesToEnroll[i];
+        if (course.sections.length > 0) {
+          const section = await Section.findById(course.sections[0]);
+          if (section && section.lectures.length > 0) {
+            const lectureId = section.lectures[0];
+            
+            const assignment = await Assignment.create({
+              title: `Final Project: ${course.title}`,
+              description: 'Please submit your comprehensive project file (.zip or .pdf) based on the course materials. Ensure all guidelines are followed.',
+              dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+              maxMarks: 100,
+              lecture: lectureId,
+              course: course._id,
+              instructor: instructor._id
+            });
+            assignmentCount++;
+
+            // Seed Submission (Disabled to verify student upload flow)
+            /*
+            const isReviewed = Math.random() > 0.5;
+            await AssignmentSubmission.create({
+              student: student._id,
+              assignment: assignment._id,
+              course: course._id,
+              lecture: lectureId,
+              submissionUrl: '/uploads/assignments/mock-file.zip',
+              originalFilename: 'my-project.zip',
+              status: isReviewed ? 'Reviewed' : 'Pending',
+              marks: isReviewed ? Math.floor(Math.random() * 40) + 60 : undefined,
+              feedback: isReviewed ? 'Good job on the implementation.' : undefined
+            });
+            */
+          }
+        }
+      }
+      console.log(`Created ${assignmentCount} assignments with mock submissions.`);
+
     } else {
       console.log('Test student student@test.com not found, skipped enrollment.');
     }

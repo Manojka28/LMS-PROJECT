@@ -102,10 +102,15 @@ router.post('/login', loginRules, handleValidation, async (req, res, next) => {
       });
     }
 
+    if (user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been disabled. Please contact support.',
+      });
+    }
+
     const token = signToken(user._id);
-
     user.password = undefined;
-
     sendUser(res, user, token);
   } catch (err) {
     next(err);

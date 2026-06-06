@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../services/api';
 import { formatPrice } from '../utils/courseHelpers';
+import { useWishlist } from '../context/WishlistContext';
 import CourseNavbar from '../components/CourseNavbar';
 import TiltCard from '../components/TiltCard';
 
@@ -9,6 +10,7 @@ const PLACEHOLDER_IMG =
   'https://images.unsplash.com/photo-1516321318423-f06f868dfd4d?q=80&w=800&auto=format&fit=crop';
 
 export default function CoursesPage() {
+  const { isWishlisted, toggleWishlist } = useWishlist();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -83,7 +85,38 @@ export default function CoursesPage() {
         {!loading && !error && courses.length > 0 && (
           <div className="courses-grid">
             {courses.map((course) => (
-              <TiltCard key={course._id} className="course-card">
+              <TiltCard key={course._id} className="course-card" style={{ position: 'relative' }}>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleWishlist(course._id);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '15px',
+                    right: '15px',
+                    zIndex: 10,
+                    background: 'rgba(0,0,0,0.6)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    backdropFilter: 'blur(4px)',
+                    color: isWishlisted(course._id) ? '#ef4444' : '#fff',
+                    fontSize: '20px',
+                    transition: 'transform 0.2s, color 0.2s'
+                  }}
+                  title={isWishlisted(course._id) ? "Remove from Wishlist" : "Add to Wishlist"}
+                  onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                  onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <i className={isWishlisted(course._id) ? "ri-heart-3-fill" : "ri-heart-3-line"} />
+                </button>
                 <div className="course-img">
                   <img
                     src={course.thumbnail || PLACEHOLDER_IMG}
