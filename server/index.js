@@ -66,9 +66,23 @@ const limiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    return req.path.startsWith('/ai') || req.path.startsWith('/intelligence') || req.path.startsWith('/roadmap/coach-review');
+  }
 });
 
 app.use('/api', limiter);
+
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000, // Higher limit for AI streaming and frequent queries
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/ai', aiLimiter);
+app.use('/api/intelligence', aiLimiter);
+app.use('/api/roadmap/coach-review', aiLimiter);
 
 const isDev = process.env.NODE_ENV?.trim() === 'development';
 
