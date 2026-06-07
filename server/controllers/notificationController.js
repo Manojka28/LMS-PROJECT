@@ -6,7 +6,7 @@ export const getNotifications = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(20);
 
-    const unreadCount = await Notification.countDocuments({ userId: req.user._id, read: false });
+    const unreadCount = await Notification.countDocuments({ userId: req.user._id, isRead: false });
 
     res.json({ success: true, notifications, unreadCount });
   } catch (error) {
@@ -27,7 +27,7 @@ export const markAsRead = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    notification.read = true;
+    notification.isRead = true;
     await notification.save();
 
     res.json({ success: true, notification });
@@ -39,8 +39,8 @@ export const markAsRead = async (req, res) => {
 export const markAllAsRead = async (req, res) => {
   try {
     await Notification.updateMany(
-      { userId: req.user._id, read: false },
-      { $set: { read: true } }
+      { userId: req.user._id, isRead: false },
+      { $set: { isRead: true } }
     );
     res.json({ success: true, message: 'All notifications marked as read' });
   } catch (error) {

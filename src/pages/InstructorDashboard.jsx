@@ -11,6 +11,7 @@ export default function InstructorDashboard() {
   const navigate = useNavigate();
   const [analytics, setAnalytics] = useState(null);
   const [discussionAnalytics, setDiscussionAnalytics] = useState(null);
+  const [certificateAnalytics, setCertificateAnalytics] = useState(null);
   const [courses, setCourses] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -28,6 +29,10 @@ export default function InstructorDashboard() {
       const discussionData = await api.get('/discussion/analytics/instructor');
       if (discussionData.success) {
         setDiscussionAnalytics(discussionData.analytics);
+      }
+      const certData = await api.get('/certificate/instructor/analytics').catch(() => ({ success: false }));
+      if (certData && certData.success) {
+        setCertificateAnalytics(certData.analytics);
       }
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
@@ -92,6 +97,18 @@ export default function InstructorDashboard() {
     navigate('/login');
   };
 
+  const handleRevoke = async (certificateId) => {
+    const reason = prompt('Enter reason for revocation:');
+    if (!reason) return;
+    try {
+      await api.post('/certificate/revoke', { certificateId, reason });
+      alert('Certificate revoked successfully');
+      fetchAnalytics(); // Refresh
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to revoke certificate');
+    }
+  };
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
@@ -129,6 +146,75 @@ export default function InstructorDashboard() {
             <div style={{ padding: '15px', background: '#1a1a1a', borderRadius: '6px', border: '1px solid #222' }}>
               <div style={{ fontSize: '14px', color: '#888' }}>Resolved</div>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981' }}>{discussionAnalytics.resolvedQuestions}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {certificateAnalytics && (
+        <div style={{ marginTop: '40px', marginBottom: '40px' }}>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '20px' }}>Certificate Analytics</h2>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+            <div style={{ padding: '20px', background: '#1a1a1a', borderRadius: '12px', border: '1px solid #333' }}>
+              <div style={{ fontSize: '14px', color: '#888', marginBottom: '10px' }}>Total Issued</div>
+              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#fff' }}>{certificateAnalytics.totalIssued}</div>
+            </div>
+            <div style={{ padding: '20px', background: '#1a1a1a', borderRadius: '12px', border: '1px solid #10b98150' }}>
+              <div style={{ fontSize: '14px', color: '#10b981', marginBottom: '10px' }}>Valid Certificates</div>
+              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#10b981' }}>{certificateAnalytics.validCertificates}</div>
+            </div>
+            <div style={{ padding: '20px', background: '#1a1a1a', borderRadius: '12px', border: '1px solid #ef444450' }}>
+              <div style={{ fontSize: '14px', color: '#ef4444', marginBottom: '10px' }}>Revoked</div>
+              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#ef4444' }}>{certificateAnalytics.revokedCount}</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+            <div style={{ background: '#1a1a1a', borderRadius: '12px', padding: '20px', border: '1px solid #333' }}>
+              <h3 style={{ fontSize: '18px', marginBottom: '20px' }}>Certificates Per Course</h3>
+              {certificateAnalytics.certificatesPerCourse.length === 0 ? (
+                <p style={{ color: '#888' }}>No certificates issued yet.</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {certificateAnalytics.certificatesPerCourse.map((c, i) => (
+                    <li key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #333' }}>
+                      <span>{c.name}</span>
+                      <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>{c.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div style={{ background: '#1a1a1a', borderRadius: '12px', padding: '20px', border: '1px solid #333' }}>
+              <h3 style={{ fontSize: '18px', marginBottom: '20px' }}>Recent Graduates</h3>
+              {certificateAnalytics.recentIssuances.length === 0 ? (
+                <p style={{ color: '#888' }}>No recent graduates.</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {certificateAnalytics.recentIssuances.map((c, i) => (
+                    <li key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #333' }}>
+                      <div>
+                        <div style={{ color: '#fff', fontWeight: 'bold' }}>{c.studentName}</div>
+                        <div style={{ color: '#888', fontSize: '12px' }}>{c.courseTitle}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ color: c.status === 'Valid' ? '#10b981' : '#ef4444', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>{c.status.toUpperCase()}</div>
+                        <div style={{ color: '#555', fontSize: '12px', marginBottom: '5px' }}>{new Date(c.issuedAt).toLocaleDateString()}</div>
+                        {c.status === 'Valid' && (
+                          <button 
+                            onClick={() => handleRevoke(c.certificateId)}
+                            style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}
+                          >
+                            Revoke
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>

@@ -19,7 +19,7 @@ const quizSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-quizSchema.index({ lecture: 1 });
+
 quizSchema.index({ course: 1 });
 
 export default mongoose.model('Quiz', quizSchema);

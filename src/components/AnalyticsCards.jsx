@@ -6,7 +6,7 @@ export default function AnalyticsCards({ analytics }) {
   const { 
     totalCourses, publishedCourses, draftCourses, 
     totalEnrollments, totalStudents, totalRevenue, monthlyRevenue, totalWishlists,
-    revenueData, enrollmentData, completionRate, avgQuizScore, avgAssignmentScore
+    revenueData, enrollmentData, completionRate, avgQuizScore, avgAssignmentScore, totalCertificatesIssued
   } = analytics;
 
   const cards = [
@@ -20,6 +20,7 @@ export default function AnalyticsCards({ analytics }) {
     { label: 'Weekly Enrollments', value: enrollmentData?.weekly || 0, color: '#f59e0b' },
     { label: 'Daily Enrollments', value: enrollmentData?.daily || 0, color: '#eab308' },
 
+    { label: 'Certificates Issued', value: totalCertificatesIssued || 0, color: '#facc15' },
     { label: 'Completion Rate', value: completionRate !== undefined ? `${completionRate}%` : '0%', color: '#14b8a6' },
     { label: 'Avg Quiz Score', value: avgQuizScore !== undefined ? `${avgQuizScore}%` : '0%', color: '#0ea5e9' },
     { label: 'Avg Assignment Score', value: avgAssignmentScore !== undefined ? `${avgAssignmentScore}` : '0', color: '#64748b' },

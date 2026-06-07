@@ -16,6 +16,7 @@ const METRICS = [
   { key: 'totalQuizAttempts',        label: 'Quiz Attempts',     icon: 'ri-questionnaire-fill',      color: 'var(--admin-accent-purple)' },
   { key: 'totalAssignmentSubmissions', label: 'Assignments',     icon: 'ri-file-upload-fill',        color: 'var(--admin-text-secondary)' },
   { key: 'totalWishlists',           label: 'Wishlists',         icon: 'ri-heart-3-fill',            color: '#ef4444' },
+  { key: 'totalAIQueries',           label: 'AI Queries',        icon: 'ri-robot-2-fill',            color: '#8b5cf6' },
 ];
 
 const PIE_COLORS = ['#3b82f6', '#8b5cf6', '#10b981'];
@@ -105,6 +106,14 @@ export default function AdminOverview({ analytics, users, courses, payments }) {
     return analytics.topWishlistedCourses.map(c => ({
       name: c.title?.length > 16 ? c.title.slice(0, 16) + '…' : c.title,
       wishlists: c.count || 0
+    }));
+  }, [analytics]);
+
+  const completedCourseBarData = useMemo(() => {
+    if (!analytics?.topCompletedCourses) return [];
+    return analytics.topCompletedCourses.map(c => ({
+      name: c.title?.length > 16 ? c.title.slice(0, 16) + '…' : c.title,
+      certificates: c.count || 0
     }));
   }, [analytics]);
 
@@ -325,6 +334,32 @@ export default function AdminOverview({ analytics, users, courses, payments }) {
                   <YAxis dataKey="name" type="category" tick={{ fill: 'var(--admin-text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} width={100} />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar dataKey="revenue" name="Revenue" fill="var(--admin-accent-green)" radius={[0, 4, 4, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="admin-charts-grid equal" style={{ marginTop: '24px' }}>
+        <div className="admin-panel">
+          <div className="admin-panel-header">
+            <div>
+              <h3 className="admin-panel-title">Top Completed Courses</h3>
+              <p className="admin-panel-sub">By certificates issued</p>
+            </div>
+          </div>
+          <div className="admin-chart-container">
+            {completedCourseBarData.length === 0 ? (
+              <div className="chart-empty"><i className="ri-award-fill" /><p>No data</p></div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={completedCourseBarData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-border)" horizontal={false} />
+                  <XAxis type="number" tick={{ fill: 'var(--admin-text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis dataKey="name" type="category" tick={{ fill: 'var(--admin-text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} width={100} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="certificates" name="Certificates Issued" fill="var(--admin-accent-orange)" radius={[0, 4, 4, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             )}

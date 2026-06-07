@@ -21,6 +21,7 @@ export default function StudentDashboard() {
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activityRange, setActivityRange] = useState('weekly');
 
   const handleLogout = async () => {
     await logout();
@@ -37,7 +38,7 @@ export default function StudentDashboard() {
           api.get('/student/certificates'),
           api.get('/student/quiz-stats').catch(() => ({ success: false })),
           api.get('/student/assignment-stats').catch(() => ({ success: false })),
-          api.get('/payment/history').catch(() => ({ success: false }))
+          api.get('/commerce/history').catch(() => ({ success: false }))
         ]);
 
         if (analyticsRes.success) setAnalytics(analyticsRes.analytics);
@@ -71,9 +72,45 @@ export default function StudentDashboard() {
       <CourseNavbar />
       
       <div style={{ padding: '60px 5% 50px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '40px' }}>
-          <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '32px', marginBottom: '10px' }}>My Learning Space</h1>
-          <p style={{ color: '#888', margin: 0 }}>Welcome back, {user?.name} ({user?.role})</p>
+        <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+          <div>
+            <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '32px', marginBottom: '10px' }}>My Learning Space</h1>
+            <p style={{ color: '#888', margin: 0 }}>Welcome back, {user?.name} ({user?.role})</p>
+          </div>
+          <div style={{ display: 'flex', gap: '15px' }}>
+            <button 
+              onClick={() => navigate('/student/placement')}
+              className="ripple-btn"
+              style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)' }}
+            >
+              <i className="ri-briefcase-4-fill" style={{ fontSize: '20px' }}></i>
+              Mock Interviews
+            </button>
+            <button 
+              onClick={() => navigate('/student/roadmap')}
+              className="ripple-btn"
+              style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)' }}
+            >
+              <i className="ri-road-map-fill" style={{ fontSize: '20px' }}></i>
+              AI Roadmap
+            </button>
+            <button 
+              onClick={() => navigate('/student/ai-coach')}
+              className="ripple-btn"
+              style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)' }}
+            >
+              <i className="ri-robot-2-fill" style={{ fontSize: '20px' }}></i>
+              AI Coach
+            </button>
+            <button 
+              onClick={() => navigate('/student/resume')}
+              className="ripple-btn"
+              style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#000', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)' }}
+            >
+              <i className="ri-file-user-fill" style={{ fontSize: '20px' }}></i>
+              Resume Builder
+            </button>
+          </div>
         </div>
 
         {analytics && (
@@ -83,16 +120,37 @@ export default function StudentDashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
               
               <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '16px' }}>Weekly Activity</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <h3 style={{ margin: '0', fontSize: '16px' }}>Learning Activity</h3>
+                    <div style={{ display: 'flex', background: '#222', borderRadius: '6px', overflow: 'hidden' }}>
+                      <button 
+                        onClick={() => setActivityRange('weekly')}
+                        style={{ padding: '4px 10px', fontSize: '12px', border: 'none', background: activityRange === 'weekly' ? '#3b82f6' : 'transparent', color: activityRange === 'weekly' ? '#fff' : '#888', cursor: 'pointer' }}>
+                        7 Days
+                      </button>
+                      <button 
+                        onClick={() => setActivityRange('monthly')}
+                        style={{ padding: '4px 10px', fontSize: '12px', border: 'none', background: activityRange === 'monthly' ? '#3b82f6' : 'transparent', color: activityRange === 'monthly' ? '#fff' : '#888', cursor: 'pointer' }}>
+                        30 Days
+                      </button>
+                    </div>
+                  </div>
+                  {analytics.mostActiveDay && analytics.mostActiveDay.date !== '-' && (
+                    <span style={{ fontSize: '12px', color: '#888', background: '#222', padding: '4px 8px', borderRadius: '12px' }}>
+                      Most Active: <strong>{new Date(analytics.mostActiveDay.date).toLocaleDateString('en-US', { weekday: 'short' })}</strong> ({analytics.mostActiveDay.hours} hrs)
+                    </span>
+                  )}
+                </div>
                 <div style={{ height: '250px' }}>
-                  {analytics.weeklyProgress?.every(d => d.hours === 0) ? (
+                  {(activityRange === 'weekly' ? analytics.weeklyProgress : analytics.monthlyProgress)?.every(d => d.hours === 0) ? (
                     <div style={{height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#888'}}>
                        <i className="ri-bar-chart-2-line" style={{fontSize: '32px', marginBottom: '10px'}}/>
                        <p>No activity data available</p>
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={analytics.weeklyProgress || []} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                      <AreaChart data={activityRange === 'weekly' ? analytics.weeklyProgress : analytics.monthlyProgress} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -100,7 +158,7 @@ export default function StudentDashboard() {
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                        <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
+                        <XAxis dataKey="name" stroke="#888" fontSize={10} tickLine={false} axisLine={false} interval={activityRange === 'monthly' ? 4 : 0} />
                         <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '8px' }} />
                         <Area type="monotone" dataKey="hours" name="Hours" stroke="#3b82f6" fillOpacity={1} fill="url(#colorHours)" />
@@ -216,6 +274,35 @@ export default function StudentDashboard() {
           </div>
         )}
 
+        <div style={{ marginBottom: '50px', background: 'linear-gradient(145deg, #1a1a1a, #111)', borderRadius: '24px', border: '1px solid #ec489950', display: 'flex', padding: '40px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '30px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '200px', height: '200px', background: '#ec4899', filter: 'blur(100px)', opacity: 0.15, borderRadius: '50%' }}></div>
+          <div style={{ zIndex: 1 }}>
+            <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '28px', margin: '0 0 10px 0', color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <i className="ri-robot-2-fill" style={{ color: '#ec4899' }}></i> Your Personal AI Career Coach
+            </h2>
+            <p style={{ color: '#ccc', fontSize: '16px', margin: '0 0 20px 0', maxWidth: '600px', lineHeight: '1.6' }}>
+              Get a personalized weekly review of your learning journey. Our AI analyzes your progress, identifies your strengths, highlights areas for improvement, and sets your goals for next week.
+            </p>
+            <button 
+              onClick={() => navigate('/student/ai-coach')}
+              className="ripple-btn"
+              style={{ padding: '12px 30px', background: '#ec4899', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}
+            >
+              Get Weekly Review
+            </button>
+          </div>
+          <div style={{ zIndex: 1, display: 'flex', gap: '15px' }}>
+             <div style={{ background: '#111', padding: '15px 20px', borderRadius: '12px', border: '1px solid #333', textAlign: 'center' }}>
+               <i className="ri-sword-fill" style={{ fontSize: '24px', color: '#10b981' }}></i>
+               <div style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>Strengths</div>
+             </div>
+             <div style={{ background: '#111', padding: '15px 20px', borderRadius: '12px', border: '1px solid #333', textAlign: 'center' }}>
+               <i className="ri-focus-2-line" style={{ fontSize: '24px', color: '#f59e0b' }}></i>
+               <div style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>Goals</div>
+             </div>
+          </div>
+        </div>
+
         <div style={{ marginBottom: '50px' }}>
           <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '24px', marginBottom: '20px' }}>My Courses</h2>
           <StudentCourseGrid courses={enrolledCourses} />
@@ -276,23 +363,50 @@ export default function StudentDashboard() {
             <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '24px', marginBottom: '20px' }}>My Certificates</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
               {certificates.map(cert => (
-                <div key={cert._id} style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
+                <div key={cert._id} style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333', position: 'relative' }}>
+                  {cert.isRevoked && (
+                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#ef4444', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>
+                      REVOKED
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
                     <div style={{ width: '50px', height: '50px', background: '#3b82f620', color: '#3b82f6', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '24px' }}>
                       <i className="ri-award-fill"></i>
                     </div>
-                    <div>
-                      <h4 style={{ margin: '0 0 5px 0' }}>{cert.course?.title}</h4>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</p>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: '0 0 5px 0' }}>{cert.courseTitle || (cert.courseId && cert.courseId.title)}</h4>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>ID: {cert.certificateId}</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>Issued: {new Date(cert.issuedAt || cert.issueDate).toLocaleDateString()}</p>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => window.open(`http://localhost:5000/api/certificate/${cert.course?._id}/download`, '_blank')}
-                    className="ripple-btn"
-                    style={{ width: '100%', padding: '10px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px' }}
-                  >
-                    Download PDF
-                  </button>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <button 
+                      onClick={() => window.open(`http://localhost:5000${cert.generatedPdfPath || cert.pdfUrl}`, '_blank')}
+                      className="ripple-btn"
+                      disabled={cert.isRevoked}
+                      style={{ width: '100%', padding: '10px', background: cert.isRevoked ? '#333' : '#3b82f6', color: cert.isRevoked ? '#666' : '#fff', border: 'none', borderRadius: '6px', cursor: cert.isRevoked ? 'not-allowed' : 'pointer' }}
+                    >
+                      <i className="ri-download-2-line" style={{ marginRight: '5px' }}></i> Download PDF
+                    </button>
+                    
+                    {!cert.isRevoked && cert.qrVerificationUrl && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <button 
+                          onClick={() => { navigator.clipboard.writeText(cert.qrVerificationUrl); alert('Verification Link Copied!'); }}
+                          style={{ padding: '8px', background: 'transparent', border: '1px solid #333', color: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                        >
+                          <i className="ri-links-line"></i> Copy Link
+                        </button>
+                        <button 
+                          onClick={() => window.open(`https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${encodeURIComponent(cert.courseTitle || cert.courseId?.title)}&organizationName=LMS%20Coding%20School&issueYear=${new Date(cert.issuedAt).getFullYear()}&issueMonth=${new Date(cert.issuedAt).getMonth()+1}&certUrl=${encodeURIComponent(cert.qrVerificationUrl)}&certId=${cert.certificateId}`, '_blank')}
+                          style={{ padding: '8px', background: '#0077b5', border: 'none', color: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                        >
+                          <i className="ri-linkedin-fill"></i> LinkedIn
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

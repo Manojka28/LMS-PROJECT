@@ -142,6 +142,9 @@ router.delete('/:id/review', protect, attachUser, deleteReview);
 
 router.put(
   '/:id',
+  protect,
+  attachUser,
+  authorize('instructor', 'admin'),
   param('id').isMongoId().withMessage('Invalid course ID'),
   updateCourseRules,
   handleValidation,

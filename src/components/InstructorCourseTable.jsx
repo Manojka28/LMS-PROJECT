@@ -209,6 +209,13 @@ export default function InstructorCourseTable({
                         Edit
                       </button>
                       <button
+                        onClick={() => navigate(`/instructor/course-intelligence/${course._id}`)}
+                        className="ripple-btn"
+                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#3b82f6', color: '#fff', border: '1px solid #2563eb', fontWeight: 'bold' }}
+                      >
+                        <i className="ri-radar-line" style={{ marginRight: '4px' }}></i> AI Intelligence
+                      </button>
+                      <button
                         onClick={() => onPublishToggle(course._id, !course.isPublished)}
                         className="ripple-btn"
                         style={{

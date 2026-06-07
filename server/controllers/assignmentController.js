@@ -152,6 +152,10 @@ export async function submitAssignment(req, res, next) {
       link: `/instructor/dashboard`
     });
 
+    // Check full eligibility
+    const { checkAndMarkCourseComplete } = await import('./progressController.js');
+    await checkAndMarkCourseComplete(req.user._id, assignment.course);
+
     res.status(201).json({ success: true, submission });
   } catch (err) {
     next(err);
