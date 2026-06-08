@@ -7,8 +7,22 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <title>IIITL Coding School</title>
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="background: #0b0b0b; margin: 0; overflow-x: hidden;">
+    <div id="root">
+      <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0b0b0b; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 24px;">
+          <img src="/logos/iiitl-logo.svg" alt="LMS Logo" style="width: 80px; height: 80px; animation: pulse 2s infinite ease-in-out;" />
+          <div style="width: 240px; height: 4px; background: #222; border-radius: 4px; overflow: hidden; position: relative;">
+            <div style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background: #00D26A; transform-origin: left; animation: loadingProgress 2s infinite ease-in-out;"></div>
+          </div>
+          <p style="color: #888; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; font-family: sans-serif;">Initializing...</p>
+        </div>
+      </div>
+      <style>
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
+        @keyframes loadingProgress { 0% { transform: scaleX(0); transform-origin: left; } 49% { transform: scaleX(1); transform-origin: left; } 50% { transform: scaleX(1); transform-origin: right; } 100% { transform: scaleX(0); transform-origin: right; } }
+      </style>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

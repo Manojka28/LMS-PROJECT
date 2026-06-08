@@ -96,7 +96,11 @@ export default function Register() {
             {errors.password && <span className="field-error">{errors.password}</span>}
           </div>
           <MagneticButton type="submit" className="green-btn check-btn ripple-btn" disabled={submitting}>
-            {submitting ? 'Creating account...' : 'Register'}
+            {submitting ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="ri-loader-4-line" style={{ animation: 'spin 1s linear infinite' }} /> Creating account...
+              </span>
+            ) : 'Register'}
           </MagneticButton>
         </form>
 
