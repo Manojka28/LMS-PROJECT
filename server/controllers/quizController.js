@@ -162,7 +162,7 @@ export async function submitQuiz(req, res, next) {
       userId: req.user._id,
       type: 'QUIZ_GRADED',
       title: 'Quiz Graded',
-      message: `Your quiz "${quiz.title}" has been graded. Score: ${score}/${quiz.questions.length}`,
+      message: `Your quiz has been graded. Score: ${score}/${quiz.questions.length}`,
       link: `/courses/${quiz.course}/lecture/${quiz.lecture}`
     });
 
@@ -172,10 +172,14 @@ export async function submitQuiz(req, res, next) {
         userId: course.instructor,
         type: 'QUIZ_SUBMITTED',
         title: 'Quiz Submitted',
-        message: `${req.user.name} submitted the quiz "${quiz.title}".`,
+        message: `${req.user.name} submitted a quiz.`,
         link: `/instructor/dashboard`
       });
     }
+
+    // After updating progress, check full eligibility
+    const { checkAndMarkCourseComplete } = await import('./progressController.js');
+    await checkAndMarkCourseComplete(req.user._id, quiz.course);
 
     res.json({
       success: true,

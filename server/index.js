@@ -21,11 +21,15 @@ import studentRoutes from './routes/student.js';
 import certificateRoutes from './routes/certificate.js';
 import quizRoutes from './routes/quiz.js';
 import assignmentRoutes from './routes/assignment.js';
-import paymentRoutes from './routes/payment.js';
 import adminRoutes from './routes/admin.js';
 import aiRoutes from './routes/ai.js';
 import discussionRoutes from './routes/discussion.js';
 import notificationRoutes from './routes/notification.js';
+import resumeRoutes from './routes/resume.js';
+import roadmapRoutes from './routes/roadmap.js';
+import placementRoutes from './routes/placement.js';
+import intelligenceRoutes from './routes/intelligence.js';
+import commerceRoutes from './routes/commerce.js';
 
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
@@ -62,9 +66,23 @@ const limiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    return req.path.startsWith('/ai') || req.path.startsWith('/intelligence') || req.path.startsWith('/roadmap/coach-review');
+  }
 });
 
 app.use('/api', limiter);
+
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000, // Higher limit for AI streaming and frequent queries
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/ai', aiLimiter);
+app.use('/api/intelligence', aiLimiter);
+app.use('/api/roadmap/coach-review', aiLimiter);
 
 const isDev = process.env.NODE_ENV?.trim() === 'development';
 
@@ -95,11 +113,15 @@ app.use('/api/student', studentRoutes);
 app.use('/api/certificate', certificateRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/assignment', assignmentRoutes);
-app.use('/api/payment', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/discussion', discussionRoutes);
 app.use('/api/notification', notificationRoutes);
+app.use('/api/resume', resumeRoutes);
+app.use('/api/roadmap', roadmapRoutes);
+app.use('/api/placement', placementRoutes);
+app.use('/api/intelligence', intelligenceRoutes);
+app.use('/api/commerce', commerceRoutes);
 console.log('INSTRUCTOR ROUTE MOUNTED');
 
 app.use(notFound);

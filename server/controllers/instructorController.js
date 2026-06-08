@@ -4,8 +4,9 @@ import Review from '../models/Review.js';
 import QuizAttempt from '../models/QuizAttempt.js';
 import Assignment from '../models/Assignment.js';
 import AssignmentSubmission from '../models/AssignmentSubmission.js';
-import Payment from '../models/Payment.js';
+import Order from '../models/Order.js';
 import Wishlist from '../models/Wishlist.js';
+import Certificate from '../models/Certificate.js';
 
 export async function getDashboardAnalytics(req, res, next) {
   try {
@@ -30,9 +31,9 @@ export async function getDashboardAnalytics(req, res, next) {
     });
 
     const courseIds = courses.map(c => c._id);
-    const payments = await Payment.find({ 
-      course: { $in: courseIds },
-      paymentStatus: { $in: ['paid', 'enrolledAfterPayment'] }
+    const orders = await Order.find({ 
+      courseId: { $in: courseIds },
+      status: 'Successful'
     });
 
     let totalRevenue = 0;
@@ -56,27 +57,28 @@ export async function getDashboardAnalytics(req, res, next) {
       enrollmentTrends.push({ date: dateStr, count: 0 });
     }
 
-    payments.forEach(payment => {
-      totalRevenue += payment.amount;
-      const pDate = new Date(payment.createdAt);
+    orders.forEach(order => {
+      totalRevenue += order.amount;
+      const pDate = new Date(order.createdAt);
       const dateStr = pDate.toISOString().split('T')[0];
       const timeDiff = now - pDate;
       const daysDiff = timeDiff / (1000 * 3600 * 24);
 
-      if (daysDiff <= 1) revenueData.daily += payment.amount;
-      if (daysDiff <= 7) revenueData.weekly += payment.amount;
+      if (daysDiff <= 1) revenueData.daily += order.amount;
+      if (daysDiff <= 7) revenueData.weekly += order.amount;
       if (pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
         // already counted monthlyRevenue
       }
 
       const revTrend = revenueTrends.find(r => r.date === dateStr);
-      if (revTrend) revTrend.amount += payment.amount;
+      if (revTrend) revTrend.amount += order.amount;
 
-      const cId = payment.course.toString();
+      const cId = order.courseId.toString();
       if (!revenuePerCourseMap[cId]) {
-        revenuePerCourseMap[cId] = { courseId: cId, courseTitle: payment.courseTitle, revenue: 0, paidEnrollments: 0 };
+        const cTitle = courses.find(c => c._id.toString() === cId)?.title || 'Unknown Course';
+        revenuePerCourseMap[cId] = { courseId: cId, courseTitle: cTitle, revenue: 0, paidEnrollments: 0 };
       }
-      revenuePerCourseMap[cId].revenue += payment.amount;
+      revenuePerCourseMap[cId].revenue += order.amount;
       revenuePerCourseMap[cId].paidEnrollments += 1;
     });
 
@@ -122,6 +124,7 @@ export async function getDashboardAnalytics(req, res, next) {
     ]);
 
     const totalWishlists = await Wishlist.countDocuments({ course: { $in: courseIds } });
+    const totalCertificatesIssued = await Certificate.countDocuments({ courseId: { $in: courseIds } });
 
     res.json({
       success: true,
@@ -142,7 +145,8 @@ export async function getDashboardAnalytics(req, res, next) {
         avgAssignmentScore,
         revenuePerCourse,
         totalWishlists,
-        topWishlistedCourses: wishlistStats
+        topWishlistedCourses: wishlistStats,
+        totalCertificatesIssued
       }
     });
   } catch (err) {

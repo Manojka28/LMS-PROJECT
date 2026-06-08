@@ -118,97 +118,27 @@ export default function CourseDetailsPage() {
       navigate('/login');
       return;
     }
+
+    if (course.price > 0) {
+      navigate('/student/checkout', { state: { course } });
+      return;
+    }
+
     setEnrolling(true);
     setEnrollError('');
     setEnrollSuccess('');
 
     try {
-      if (course.price > 0) {
-        // Step 1: Create order (works in both dev and real mode)
-        const orderData = await api.post('/payment/create-order', { courseId: id });
-
-        if (!orderData.success) {
-          throw new Error(orderData.message || 'Failed to create payment order');
-        }
-
-        if (orderData.devMode) {
-          // ── DEV MODE: no popup, simulate payment instantly ──────────────────
-          setEnrollSuccess('Processing payment...');
-          await new Promise(r => setTimeout(r, 800)); // brief visual feedback
-
-          await api.post('/payment/dev-purchase', {
-            orderId: orderData.orderId,
-            courseId: id
-          });
-
-          setEnrollSuccess('✓ Payment simulated! You are now enrolled. [DEV MODE]');
-          setCourse((prev) => ({
-            ...prev,
-            isEnrolled: true,
-            enrolledCount: getEnrolledCount(prev) + 1,
-          }));
-          const progData = await api.get(`/progress/${id}`);
-          setProgress(progData.progress);
-
-        } else {
-          // ── REAL RAZORPAY MODE ───────────────────────────────────────────────
-          const isScriptLoaded = await loadRazorpayScript();
-          if (!isScriptLoaded) {
-            throw new Error('Razorpay SDK failed to load. Are you online?');
-          }
-
-          const options = {
-            key: orderData.key,
-            amount: orderData.amount,
-            currency: orderData.currency,
-            name: 'Antigravity LMS',
-            description: `Purchase: ${course.title}`,
-            order_id: orderData.orderId,
-            handler: async function (response) {
-              try {
-                await api.post('/payment/verify', {
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_signature: response.razorpay_signature,
-                  courseId: id
-                });
-                setEnrollSuccess('Payment successful! You are now enrolled.');
-                setCourse((prev) => ({
-                  ...prev,
-                  isEnrolled: true,
-                  enrolledCount: getEnrolledCount(prev) + 1,
-                }));
-                const progData = await api.get(`/progress/${id}`);
-                setProgress(progData.progress);
-              } catch (err) {
-                setEnrollError(err instanceof ApiError ? err.message : 'Payment verification failed.');
-              }
-            },
-            prefill: {
-              name: user.name,
-              email: user.email,
-            },
-            theme: { color: '#3b82f6' }
-          };
-
-          const rzp = new window.Razorpay(options);
-          rzp.on('payment.failed', function (response) {
-            setEnrollError(`Payment failed: ${response.error.description}`);
-          });
-          rzp.open();
-        }
-      } else {
-        // Free course enrollment
-        await api.post(`/course/${id}/enroll`);
-        setEnrollSuccess('Successfully enrolled in the course!');
-        setCourse((prev) => ({
-          ...prev,
-          isEnrolled: true,
-          enrolledCount: getEnrolledCount(prev) + 1,
-        }));
-        const progData = await api.get(`/progress/${id}`);
-        setProgress(progData.progress);
-      }
+      // Free course enrollment
+      await api.post(`/course/${id}/enroll`);
+      setEnrollSuccess('Successfully enrolled in the course!');
+      setCourse((prev) => ({
+        ...prev,
+        isEnrolled: true,
+        enrolledCount: getEnrolledCount(prev) + 1,
+      }));
+      const progData = await api.get(`/progress/${id}`);
+      setProgress(progData.progress);
     } catch (err) {
       setEnrollError(err instanceof ApiError ? err.message : 'Failed to process enrollment.');
     } finally {

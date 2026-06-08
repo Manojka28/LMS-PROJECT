@@ -54,7 +54,7 @@ export default function CourseNavbar() {
     try {
       await api.put(`/notification/${id}/read`);
       setUnreadCount(Math.max(0, unreadCount - 1));
-      setNotifications(notifications.map(n => n._id === id ? { ...n, read: true } : n));
+      setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
     } catch (err) {}
   };
 
@@ -62,7 +62,7 @@ export default function CourseNavbar() {
     try {
       await api.put('/notification/mark-all-read');
       setUnreadCount(0);
-      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
     } catch (err) {}
   };
 
@@ -141,15 +141,15 @@ export default function CourseNavbar() {
                     ) : (
                       notifications.map(n => (
                         <div 
-                          key={n._id} 
-                          onClick={() => { if (!n.read) markAsRead(n._id); if (n.link) navigate(n.link); setShowNotifications(false); }}
-                          style={{ padding: '12px 15px', borderBottom: '1px solid #222', background: n.read ? 'transparent' : 'rgba(59, 130, 246, 0.05)', cursor: 'pointer', transition: 'background 0.2s' }}
-                          onMouseOver={e => e.currentTarget.style.background = '#222'}
-                          onMouseOut={e => e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(59, 130, 246, 0.05)'}
+                          key={n._id}
+                          onClick={() => { if (!n.isRead) markAsRead(n._id); if (n.link) navigate(n.link); setShowNotifications(false); }}
+                          style={{ padding: '12px 15px', borderBottom: '1px solid #222', background: n.isRead ? 'transparent' : 'rgba(59, 130, 246, 0.05)', cursor: 'pointer', transition: 'background 0.2s' }}
+                          onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                          onMouseOut={e => e.currentTarget.style.background = n.isRead ? 'transparent' : 'rgba(59, 130, 246, 0.05)'}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: n.read ? '#aaa' : '#fff' }}>{n.title}</span>
-                            {!n.read && <span style={{ width: '8px', height: '8px', background: '#3b82f6', borderRadius: '50%' }}></span>}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '5px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: n.isRead ? '#aaa' : '#fff' }}>{n.title}</span>
+                            {!n.isRead && <span style={{ width: '8px', height: '8px', background: '#3b82f6', borderRadius: '50%' }}></span>}
                           </div>
                           <p style={{ margin: 0, fontSize: '12px', color: '#888', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.message}</p>
                         </div>

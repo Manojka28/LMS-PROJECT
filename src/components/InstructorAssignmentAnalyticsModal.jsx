@@ -47,41 +47,49 @@ export default function InstructorAssignmentAnalyticsModal({ course, onClose }) 
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading analytics...</div>
+          <div className="loading-state" style={{ minHeight: '200px' }}>
+            <div className="loading-spinner" />
+            <span className="loading-state-text">Loading analytics...</span>
+          </div>
         ) : !analytics || analytics.submissions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>No assignment submissions recorded yet.</div>
+          <div className="empty-state" style={{ border: 'none', background: 'transparent' }}>
+            <i className="ri-file-chart-line empty-state-icon" />
+            <p className="empty-state-text">No assignment submissions recorded yet.</p>
+          </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#1a1a1a', borderRadius: '8px', overflow: 'hidden' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #333', color: '#888', background: '#222' }}>
-                <th style={{ padding: '12px', fontWeight: 'normal' }}>Student</th>
-                <th style={{ padding: '12px', fontWeight: 'normal' }}>Assignment</th>
-                <th style={{ padding: '12px', fontWeight: 'normal' }}>Status</th>
-                <th style={{ padding: '12px', fontWeight: 'normal' }}>Marks</th>
-                <th style={{ padding: '12px', fontWeight: 'normal' }}>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {analytics.submissions.map((sub) => (
-                <tr key={sub._id} style={{ borderBottom: '1px solid #2a2a2a' }}>
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ color: '#fff', fontWeight: '500' }}>{sub.student?.name || 'Unknown User'}</div>
-                    <div style={{ fontSize: '12px', color: '#888' }}>{sub.student?.email}</div>
-                  </td>
-                  <td style={{ padding: '12px', color: '#aaa' }}>{sub.assignment?.title || 'Unknown Assignment'}</td>
-                  <td style={{ padding: '12px' }}>
-                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', background: sub.status === 'Reviewed' ? '#10b98120' : '#f59e0b20', color: sub.status === 'Reviewed' ? '#10b981' : '#f59e0b' }}>
-                      {sub.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px', fontWeight: 'bold', color: sub.status === 'Reviewed' ? '#fff' : '#444' }}>
-                    {sub.marks !== undefined ? sub.marks : '-'}
-                  </td>
-                  <td style={{ padding: '12px', color: '#aaa', fontSize: '12px' }}>{new Date(sub.createdAt).toLocaleString()}</td>
+          <div className="responsive-table-wrap">
+            <table className="responsive-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Assignment</th>
+                  <th>Status</th>
+                  <th>Marks</th>
+                  <th>Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {analytics.submissions.map((sub) => (
+                  <tr key={sub._id}>
+                    <td>
+                      <div style={{ color: '#fff', fontWeight: '500' }}>{sub.student?.name || 'Unknown User'}</div>
+                      <div style={{ fontSize: '12px', color: '#888' }}>{sub.student?.email}</div>
+                    </td>
+                    <td>{sub.assignment?.title || 'Unknown Assignment'}</td>
+                    <td>
+                      <span className={`status-badge ${sub.status === 'Reviewed' ? 'success' : 'warning'}`}>
+                        {sub.status}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 'bold', color: sub.status === 'Reviewed' ? '#fff' : '#444' }}>
+                      {sub.marks !== undefined ? sub.marks : '-'}
+                    </td>
+                    <td style={{ fontSize: '12px' }}>{new Date(sub.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

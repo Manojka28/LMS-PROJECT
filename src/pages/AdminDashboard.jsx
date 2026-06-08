@@ -8,6 +8,8 @@ import AdminUsersTable from '../components/admin/AdminUsersTable';
 import AdminCoursesTable from '../components/admin/AdminCoursesTable';
 import AdminPaymentsTable from '../components/admin/AdminPaymentsTable';
 import AdminInstructorsTable from '../components/admin/AdminInstructorsTable';
+import AdminAuditLogsTable from '../components/admin/AdminAuditLogsTable';
+import AdminSystemHealth from '../components/admin/AdminSystemHealth';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -86,6 +88,12 @@ export default function AdminDashboard() {
           )}
           {activeTab === 'instructors' && (
             <AdminInstructorsTable instructors={instructors} />
+          )}
+          {activeTab === 'auditlogs' && (
+            <AdminAuditLogsTable />
+          )}
+          {activeTab === 'systemhealth' && (
+            <AdminSystemHealth />
           )}
         </>
       )}

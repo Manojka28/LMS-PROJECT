@@ -90,7 +90,12 @@ export default function AdminPaymentsTable({ payments }) {
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <p style={{padding: '24px', textAlign: 'center', color: '#888'}}>No transactions found.</p>}
+        {filtered.length === 0 && (
+          <div className="admin-empty-state">
+            <i className="ri-exchange-funds-line" />
+            <p>{searchTerm || statusFilter !== 'all' ? 'No transactions match your filters.' : 'No transactions found.'}</p>
+          </div>
+        )}
       </div>
     </div>
   );

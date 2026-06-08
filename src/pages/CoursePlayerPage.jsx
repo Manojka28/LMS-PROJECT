@@ -27,6 +27,8 @@ export default function CoursePlayerPage() {
   const [quiz, setQuiz] = useState(null);
   const [quizLoaded, setQuizLoaded] = useState(false);
   const [showAITutor, setShowAITutor] = useState(false);
+  const [aiInitialQuery, setAiInitialQuery] = useState('');
+  const [askAiPosition, setAskAiPosition] = useState(null);
   const [quizResults, setQuizResults] = useState(null);
   const [quizMode, setQuizMode] = useState(false);
   const [studentAnswers, setStudentAnswers] = useState([]);
@@ -37,6 +39,45 @@ export default function CoursePlayerPage() {
   const [assignmentSubmission, setAssignmentSubmission] = useState(null);
   const [assignmentFile, setAssignmentFile] = useState(null);
   const [submittingAssignment, setSubmittingAssignment] = useState(false);
+
+  // Heartbeat tracking
+  useEffect(() => {
+    if (!course || !currentLecture) return;
+
+    let isActive = true;
+    let lastActivityTime = Date.now();
+
+    const updateActivity = () => {
+      lastActivityTime = Date.now();
+      isActive = true;
+    };
+
+    window.addEventListener('mousemove', updateActivity);
+    window.addEventListener('keydown', updateActivity);
+    window.addEventListener('scroll', updateActivity);
+
+    const interval = setInterval(() => {
+      // If no activity for 3 minutes, pause tracking
+      if (Date.now() - lastActivityTime > 3 * 60 * 1000) {
+        isActive = false;
+      }
+      
+      if (isActive && document.visibilityState === 'visible') {
+        api.post('/student/learning-heartbeat', {
+          courseId: course._id,
+          lectureId: currentLecture._id,
+          durationSeconds: 30
+        }).catch(console.error);
+      }
+    }, 30000); // 30 seconds
+
+    return () => {
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('scroll', updateActivity);
+      clearInterval(interval);
+    };
+  }, [course, currentLecture]);
 
   useEffect(() => {
     let cancelled = false;
@@ -344,6 +385,29 @@ export default function CoursePlayerPage() {
   const nextLec = getNextLecture();
   const prevLec = getPrevLecture();
 
+  const handleTextSelection = (e) => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      // Calculate position relative to viewport
+      const rect = selection.getRangeAt(0).getBoundingClientRect();
+      setAskAiPosition({
+        top: rect.top - 40,
+        left: rect.left + (rect.width / 2)
+      });
+      setAiInitialQuery(selection.toString().trim());
+    } else {
+      setAskAiPosition(null);
+    }
+  };
+
+  const handleAskAI = () => {
+    const query = `Explain this concept to me:\n\n"${aiInitialQuery}"`;
+    setAiInitialQuery(query);
+    setShowAITutor(true);
+    setAskAiPosition(null);
+    window.getSelection().removeAllRanges();
+  };
+
   // Simple YouTube to Embed URL converter
   const getEmbedUrl = (url) => {
     if (!url) return '';
@@ -371,7 +435,16 @@ export default function CoursePlayerPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             {progress.completed && (
               <button 
-                onClick={() => window.open(`http://localhost:5000/api/certificate/${course._id}/download`, '_blank')}
+                onClick={async () => {
+                  try {
+                    const res = await api.post(`/certificate/generate/${course._id}`);
+                    if(res.success) {
+                      window.open(`http://localhost:5000${res.certificate.pdfUrl}`, '_blank');
+                    }
+                  } catch(err) {
+                    alert(err.message || 'Failed to generate certificate');
+                  }
+                }}
                 className="ripple-btn"
                 style={{ padding: '6px 12px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}
               >
@@ -410,7 +483,36 @@ export default function CoursePlayerPage() {
                 ></iframe>
               </div>
               
-              <div style={{ padding: '30px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+              {/* Ask AI Context Menu */}
+              {askAiPosition && (
+                <div 
+                  style={{
+                    position: 'fixed',
+                    top: askAiPosition.top,
+                    left: askAiPosition.left,
+                    transform: 'translateX(-50%)',
+                    background: '#3b82f6',
+                    color: '#fff',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    zIndex: 1000,
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                  onClick={handleAskAI}
+                >
+                  <i className="ri-sparkling-fill"></i> Ask AI
+                </div>
+              )}
+
+              <div 
+                style={{ padding: '30px', maxWidth: '900px', margin: '0 auto', width: '100%' }}
+                onMouseUp={handleTextSelection}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                   <div>
                     <h1 style={{ fontSize: '28px', marginBottom: '10px' }}>{currentLecture.title}</h1>
@@ -815,6 +917,27 @@ export default function CoursePlayerPage() {
           <div style={{ padding: '20px', borderBottom: '1px solid #333' }}>
             <h3 style={{ fontSize: '18px' }}>Course Content</h3>
           </div>
+          {progress?.completed && (
+            <div style={{ padding: '15px 20px', borderBottom: '1px solid #333', background: '#10b98115' }}>
+              <button 
+                onClick={async () => {
+                  try {
+                    const res = await api.post(`/certificate/generate/${course._id}`);
+                    if(res.success) {
+                      window.open(`http://localhost:5000${res.certificate.pdfUrl}`, '_blank');
+                    }
+                  } catch(err) {
+                    alert(err.message || 'Failed to generate certificate');
+                  }
+                }}
+                className="ripple-btn"
+                style={{ width: '100%', padding: '10px', background: '#10b981', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <i className="ri-award-fill" style={{ marginRight: '8px', fontSize: '18px' }}></i>
+                Get Certificate
+              </button>
+            </div>
+          )}
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {course.sections && course.sections.map((section, sIdx) => (
               <div key={section._id} style={{ borderBottom: '1px solid #222' }}>
@@ -888,8 +1011,12 @@ export default function CoursePlayerPage() {
       {showAITutor && (
         <AITutor 
           courseId={course._id} 
-          lectureId={currentLecture?._id} 
-          onClose={() => setShowAITutor(false)} 
+          lectureId={currentLecture?._id}
+          initialQuery={aiInitialQuery}
+          onClose={() => {
+            setShowAITutor(false);
+            setAiInitialQuery('');
+          }} 
         />
       )}
     </div>

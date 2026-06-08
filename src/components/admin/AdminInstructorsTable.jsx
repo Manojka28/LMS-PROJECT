@@ -65,7 +65,12 @@ export default function AdminInstructorsTable({ instructors }) {
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <p style={{padding: '24px', textAlign: 'center', color: '#888'}}>No instructors found.</p>}
+        {filtered.length === 0 && (
+          <div className="admin-empty-state">
+            <i className="ri-user-star-line" />
+            <p>{searchTerm ? 'No instructors found matching your search.' : 'No instructors found.'}</p>
+          </div>
+        )}
       </div>
     </div>
   );

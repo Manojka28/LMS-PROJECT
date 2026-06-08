@@ -13,6 +13,34 @@ function isEnrolled(user, courseId) {
   return user.purchasedCourses?.some((cId) => cId.toString() === courseId.toString());
 }
 
+export async function checkAndMarkCourseComplete(studentId, courseId) {
+  const progress = await Progress.findOne({ user: studentId, course: courseId });
+  if (!progress || progress.completed) return;
+
+  if (progress.completionPercentage < 100) return;
+
+  const { checkEligibility } = await import('./certificateController.js');
+  const eligibility = await checkEligibility(studentId, courseId);
+  
+  if (eligibility.isEligible) {
+    progress.completed = true;
+    await progress.save();
+
+    try {
+      const Notification = (await import('../models/Notification.js')).default;
+      await Notification.create({
+        userId: studentId,
+        title: 'Course Completed!',
+        message: `Congratulations! You have completed all course requirements.`,
+        type: 'course_completion',
+        link: `/course/${courseId}/player`
+      });
+    } catch (err) {
+      console.error('Failed to create completion notification:', err);
+    }
+  }
+}
+
 async function getCourseLectureIds(courseId) {
   const sections = await Section.find({ course: courseId }).select('lectures');
   const ids = new Set();
@@ -69,11 +97,16 @@ export async function completeLecture(req, res, next) {
       Math.round((progress.completedLectures.length / totalLectures) * 100),
       100
     );
-    progress.completed = progress.completionPercentage === 100;
 
     await progress.save();
 
-    res.json({ success: true, progress });
+    // Verify all requirements (quizzes, assignments)
+    await checkAndMarkCourseComplete(req.user._id, courseId);
+
+    // Re-fetch progress to return the latest state
+    const updatedProgress = await Progress.findOne({ user: req.user._id, course: courseId });
+
+    res.json({ success: true, progress: updatedProgress });
   } catch (err) {
     next(err);
   }

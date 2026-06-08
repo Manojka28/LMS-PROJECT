@@ -19,6 +19,16 @@ import CoursePlayerPage from './pages/CoursePlayerPage';
 import AdminDashboard from './pages/AdminDashboard';
 import WishlistPage from './pages/WishlistPage';
 import NotificationsPage from './pages/NotificationsPage';
+import ResumeBuilderPage from './pages/ResumeBuilderPage';
+import VerificationPortal from './pages/VerificationPortal';
+import CareerRoadmapPage from './pages/CareerRoadmapPage';
+import PlacementDashboard from './pages/PlacementDashboard';
+import InterviewCenter from './pages/InterviewCenter';
+import CourseIntelligenceCenter from './pages/CourseIntelligenceCenter';
+import CheckoutFlow from './pages/CheckoutFlow';
+import InstructorEarnings from './pages/InstructorEarnings';
+import AdminFinanceCenter from './pages/AdminFinanceCenter';
+import AICoachPage from './pages/AICoachPage';
 
 function App() {
   return (
@@ -32,6 +42,8 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/courses/:id" element={<CourseDetailsPage />} />
+            <Route path="/verify-certificate" element={<VerificationPortal />} />
+            <Route path="/verify-certificate/:token" element={<VerificationPortal />} />
             <Route
               path="/course/:id/learn"
               element={
@@ -93,6 +105,78 @@ function App() {
               element={
                 <ProtectedRoute roles={['student', 'admin', 'instructor']}>
                   <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/resume"
+              element={
+                <ProtectedRoute roles={['student']}>
+                  <ResumeBuilderPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/roadmap"
+              element={
+                <ProtectedRoute roles={['student']}>
+                  <CareerRoadmapPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/placement"
+              element={
+                <ProtectedRoute roles={['student']}>
+                  <PlacementDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/interview/:sessionId"
+              element={
+                <ProtectedRoute roles={['student']}>
+                  <InterviewCenter />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/ai-coach"
+              element={
+                <ProtectedRoute roles={['student']}>
+                  <AICoachPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/instructor/course-intelligence/:courseId"
+              element={
+                <ProtectedRoute roles={['instructor']}>
+                  <CourseIntelligenceCenter />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/checkout"
+              element={
+                <ProtectedRoute roles={['student']}>
+                  <CheckoutFlow />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/instructor/earnings"
+              element={
+                <ProtectedRoute roles={['instructor']}>
+                  <InstructorEarnings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/finance"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <AdminFinanceCenter />
                 </ProtectedRoute>
               }
             />

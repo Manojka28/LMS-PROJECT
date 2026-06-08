@@ -9,6 +9,8 @@ const NAV_ITEMS = [
   { id: 'courses',      label: 'Courses',      icon: 'ri-book-3-line' },
   { id: 'payments',     label: 'Payments',     icon: 'ri-bank-card-line' },
   { id: 'instructors',  label: 'Instructors',  icon: 'ri-user-star-line' },
+  { id: 'auditlogs',    label: 'Audit Logs',   icon: 'ri-file-search-line' },
+  { id: 'systemhealth', label: 'System Health',icon: 'ri-heart-pulse-line' },
 ];
 
 export default function AdminLayout({ activeTab, onTabSelect, children }) {

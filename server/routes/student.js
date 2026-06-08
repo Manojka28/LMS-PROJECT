@@ -8,9 +8,10 @@ import {
   getQuizStats,
   getAssignmentStats,
   toggleWishlist,
-  getWishlist
+  getWishlist,
+  postLearningHeartbeat
 } from '../controllers/studentController.js';
-import { getMyCertificates } from '../controllers/certificateController.js';
+import { getStudentCertificates } from '../controllers/certificateController.js';
 
 const router = express.Router();
 
@@ -19,10 +20,11 @@ router.use(protect, attachUser, authorize('student', 'admin', 'instructor')); //
 router.get('/dashboard/analytics', getDashboardAnalytics);
 router.get('/courses', getEnrolledCourses);
 router.get('/courses/continue', getContinueLearning);
-router.get('/certificates', getMyCertificates);
+router.get('/certificates', getStudentCertificates);
 router.get('/quiz-stats', getQuizStats);
 router.get('/assignment-stats', getAssignmentStats);
 router.get('/wishlist', getWishlist);
 router.post('/wishlist/toggle', toggleWishlist);
+router.post('/learning-heartbeat', postLearningHeartbeat);
 
 export default router;

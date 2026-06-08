@@ -1,11 +1,12 @@
 import User from '../models/User.js';
 import Course from '../models/Course.js';
-import Payment from '../models/Payment.js';
+import Order from '../models/Order.js';
 import Certificate from '../models/Certificate.js';
 import AssignmentSubmission from '../models/AssignmentSubmission.js';
 import QuizAttempt from '../models/QuizAttempt.js';
 import Progress from '../models/Progress.js';
 import Wishlist from '../models/Wishlist.js';
+import AIChat from '../models/AIChat.js';
 
 // ─── GET /api/admin/analytics ─────────────────────────────────────────────────
 export async function getAnalytics(req, res, next) {
@@ -21,7 +22,9 @@ export async function getAnalytics(req, res, next) {
       payments,
       progressDocs,
       totalWishlists,
-      topWishlistedCourses
+      topWishlistedCourses,
+      topCompletedCourses,
+      totalAIQueriesResult
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: 'student' }),
@@ -30,7 +33,7 @@ export async function getAnalytics(req, res, next) {
       Certificate.countDocuments(),
       AssignmentSubmission.countDocuments(),
       QuizAttempt.countDocuments(),
-      Payment.find({ paymentStatus: { $in: ['paid', 'enrolledAfterPayment'] } }),
+      Order.find({ status: 'Successful' }),
       Progress.find({}),
       Wishlist.countDocuments(),
       Wishlist.aggregate([
@@ -40,11 +43,22 @@ export async function getAnalytics(req, res, next) {
         { $lookup: { from: 'courses', localField: '_id', foreignField: '_id', as: 'courseData' } },
         { $unwind: '$courseData' },
         { $project: { _id: 1, count: 1, title: '$courseData.title' } }
+      ]),
+      Certificate.aggregate([
+        { $group: { _id: '$courseId', count: { $sum: 1 }, title: { $first: '$courseTitle' } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 }
+      ]),
+      AIChat.aggregate([
+        { $unwind: "$messages" },
+        { $match: { "messages.role": "user" } },
+        { $count: "totalQueries" }
       ])
     ]);
 
+    const totalAIQueries = totalAIQueriesResult[0]?.totalQueries || 0;
     const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const totalPayments = await Payment.countDocuments();
+    const totalPayments = await Order.countDocuments();
     const totalEnrollments = progressDocs.length;
 
     const now = new Date();
@@ -90,9 +104,12 @@ export async function getAnalytics(req, res, next) {
       if (trend) trend.count++;
     });
 
-    const topPurchasedCourses = await Payment.aggregate([
-      { $match: { paymentStatus: { $in: ['paid', 'enrolledAfterPayment'] } } },
-      { $group: { _id: '$course', totalRevenue: { $sum: '$amount' }, enrollments: { $sum: 1 }, title: { $first: '$courseTitle' } } },
+    const topPurchasedCourses = await Order.aggregate([
+      { $match: { status: 'Successful' } },
+      { $group: { _id: '$courseId', totalRevenue: { $sum: '$amount' }, enrollments: { $sum: 1 } } },
+      { $lookup: { from: 'courses', localField: '_id', foreignField: '_id', as: 'courseData' } },
+      { $unwind: '$courseData' },
+      { $project: { _id: 1, totalRevenue: 1, enrollments: 1, title: '$courseData.title' } },
       { $sort: { enrollments: -1 } },
       { $limit: 5 }
     ]);
@@ -113,10 +130,12 @@ export async function getAnalytics(req, res, next) {
         totalWishlists,
         topWishlistedCourses,
         topPurchasedCourses,
+        topCompletedCourses,
         revenueTrends,
         enrollmentTrends,
         userTrends,
-        courseTrends
+        courseTrends,
+        totalAIQueries
       }
     });
   } catch (err) {
@@ -220,9 +239,9 @@ export async function getCourses(req, res, next) {
 
     // Attach revenue per course from payments
     const courseIds = courses.map(c => c._id);
-    const payments = await Payment.aggregate([
-      { $match: { course: { $in: courseIds }, paymentStatus: { $in: ['paid', 'enrolledAfterPayment'] } } },
-      { $group: { _id: '$course', revenue: { $sum: '$amount' }, count: { $sum: 1 } } }
+    const payments = await Order.aggregate([
+      { $match: { courseId: { $in: courseIds }, status: 'Successful' } },
+      { $group: { _id: '$courseId', revenue: { $sum: '$amount' }, count: { $sum: 1 } } }
     ]);
     const revenueMap = {};
     payments.forEach(p => { revenueMap[p._id.toString()] = { revenue: p.revenue, paidEnrollments: p.count }; });
@@ -274,17 +293,17 @@ export async function getPayments(req, res, next) {
   try {
     const { status = '', page = 1, limit = 20 } = req.query;
     const query = {};
-    if (status) query.paymentStatus = status;
+    if (status) query.status = status;
 
     const skip = (Number(page) - 1) * Number(limit);
     const [payments, total] = await Promise.all([
-      Payment.find(query)
-        .populate('student', 'name email')
-        .populate('course', 'title')
+      Order.find(query)
+        .populate('studentId', 'name email')
+        .populate('courseId', 'title')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit)),
-      Payment.countDocuments(query)
+      Order.countDocuments(query)
     ]);
 
     res.json({ success: true, payments, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
@@ -303,8 +322,8 @@ export async function getInstructors(req, res, next) {
       const courseIds = courses.map(c => c._id);
       const totalEnrollments = courses.reduce((s, c) => s + (c.enrolledStudents?.length || 0), 0);
 
-      const revenueResult = await Payment.aggregate([
-        { $match: { course: { $in: courseIds }, paymentStatus: { $in: ['paid', 'enrolledAfterPayment'] } } },
+      const revenueResult = await Order.aggregate([
+        { $match: { courseId: { $in: courseIds }, status: 'Successful' } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]);
       const revenue = revenueResult[0]?.total || 0;
@@ -345,19 +364,19 @@ export async function exportCSV(req, res, next) {
       ]);
 
     } else if (type === 'payments') {
-      headers = ['Payment ID', 'Order ID', 'Student', 'Email', 'Course', 'Amount (INR)', 'Status', 'Method', 'Date'];
-      const payments = await Payment.find()
-        .populate('student', 'name email')
-        .populate('course', 'title')
+      headers = ['Payment ID', 'Order ID', 'Student', 'Email', 'Course', 'Amount (USD)', 'Status', 'Method', 'Date'];
+      const payments = await Order.find()
+        .populate('studentId', 'name email')
+        .populate('courseId', 'title')
         .sort({ createdAt: -1 });
       rows = payments.map(p => [
-        p.razorpayPaymentId || 'N/A',
-        p.razorpayOrderId || 'N/A',
-        p.student?.name || 'N/A',
-        p.student?.email || 'N/A',
-        p.courseTitle || p.course?.title || 'N/A',
+        p.transactionId || 'N/A',
+        p.gatewayOrderId || 'N/A',
+        p.studentId?.name || 'N/A',
+        p.studentId?.email || 'N/A',
+        p.courseId?.title || 'N/A',
         p.amount,
-        p.paymentStatus,
+        p.status,
         p.paymentMethod || 'razorpay',
         new Date(p.createdAt).toISOString().split('T')[0]
       ]);

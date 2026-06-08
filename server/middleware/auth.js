@@ -45,3 +45,30 @@ export async function attachUser(req, res, next) {
     next(err);
   }
 }
+
+export function roleProtect(...roles) {
+  return async (req, res, next) => {
+    try {
+      const user = await User.findById(req.userId).select('-password');
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      if (!roles.includes(user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+
+      req.user = user;
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
+}
