@@ -55,23 +55,30 @@ export default function InstructorEarnings() {
         <div>
           <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Revenue by Course</h2>
           <div style={{ background: '#111', borderRadius: '12px', border: '1px solid #333', overflow: 'hidden' }}>
-            {Object.keys(courseRevenue).length === 0 ? <div style={{ padding: '20px', color: '#888' }}>No sales yet.</div> : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ background: '#1a1a1a', color: '#888' }}>
-                    <th style={{ padding: '15px' }}>Course</th>
-                    <th style={{ padding: '15px', textAlign: 'right' }}>Revenue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(courseRevenue).map(([title, amount]) => (
-                    <tr key={title} style={{ borderBottom: '1px solid #222' }}>
-                      <td style={{ padding: '15px' }}>{title}</td>
-                      <td style={{ padding: '15px', textAlign: 'right', color: '#10b981', fontWeight: 'bold' }}>${amount.toFixed(2)}</td>
+            {Object.keys(courseRevenue).length === 0 ? (
+              <div className="empty-state" style={{ padding: '30px', border: 'none' }}>
+                <i className="ri-shopping-bag-3-line empty-state-icon" style={{ fontSize: '36px' }}></i>
+                <p className="empty-state-text">No sales yet.</p>
+              </div>
+            ) : (
+              <div className="responsive-table-wrap">
+                <table className="responsive-table">
+                  <thead>
+                    <tr>
+                      <th>Course</th>
+                      <th style={{ textAlign: 'right' }}>Revenue</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {Object.entries(courseRevenue).map(([title, amount]) => (
+                      <tr key={title}>
+                        <td>{title}</td>
+                        <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 'bold' }}>${amount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -80,29 +87,36 @@ export default function InstructorEarnings() {
         <div>
           <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Payout History</h2>
           <div style={{ background: '#111', borderRadius: '12px', border: '1px solid #333', overflow: 'hidden' }}>
-            {payouts.length === 0 ? <div style={{ padding: '20px', color: '#888' }}>No payouts generated yet.</div> : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ background: '#1a1a1a', color: '#888' }}>
-                    <th style={{ padding: '15px' }}>Period</th>
-                    <th style={{ padding: '15px' }}>Amount</th>
-                    <th style={{ padding: '15px', textAlign: 'right' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payouts.map(p => (
-                    <tr key={p._id} style={{ borderBottom: '1px solid #222' }}>
-                      <td style={{ padding: '15px', fontSize: '14px', color: '#aaa' }}>{new Date(p.periodStart).toLocaleDateString()} - {new Date(p.periodEnd).toLocaleDateString()}</td>
-                      <td style={{ padding: '15px', fontWeight: 'bold' }}>${p.amount.toFixed(2)}</td>
-                      <td style={{ padding: '15px', textAlign: 'right' }}>
-                        <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', background: p.status === 'Paid' ? '#10b98120' : '#f59e0b20', color: p.status === 'Paid' ? '#10b981' : '#f59e0b' }}>
-                          {p.status}
-                        </span>
-                      </td>
+            {payouts.length === 0 ? (
+              <div className="empty-state" style={{ padding: '30px', border: 'none' }}>
+                <i className="ri-bank-card-line empty-state-icon" style={{ fontSize: '36px' }}></i>
+                <p className="empty-state-text">No payouts generated yet.</p>
+              </div>
+            ) : (
+              <div className="responsive-table-wrap">
+                <table className="responsive-table">
+                  <thead>
+                    <tr>
+                      <th>Period</th>
+                      <th>Amount</th>
+                      <th style={{ textAlign: 'right' }}>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {payouts.map(p => (
+                      <tr key={p._id}>
+                        <td style={{ color: '#aaa' }}>{new Date(p.periodStart).toLocaleDateString()} - {new Date(p.periodEnd).toLocaleDateString()}</td>
+                        <td style={{ fontWeight: 'bold' }}>${p.amount.toFixed(2)}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <span className={`status-badge ${p.status === 'Paid' ? 'success' : 'warning'}`}>
+                            {p.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

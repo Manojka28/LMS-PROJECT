@@ -42,7 +42,12 @@ export default function PlacementDashboard() {
     }
   };
 
-  if (loading) return <div style={{ color: '#fff', textAlign: 'center', padding: '50px' }}>Loading Placement Data...</div>;
+  if (loading) return (
+    <div className="page-loading">
+      <div className="loading-bar" style={{ width: 200 }} />
+      <p>Loading Placement Data...</p>
+    </div>
+  );
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
@@ -53,7 +58,7 @@ export default function PlacementDashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+      <div className="dashboard-grid" style={{ marginBottom: '40px' }}>
         <div style={{ background: '#111', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
           <div style={{ color: '#888', fontSize: '14px', marginBottom: '10px' }}>Placement Readiness</div>
           <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#3b82f6' }}>{profile.placementReadinessScore}%</div>
@@ -77,7 +82,7 @@ export default function PlacementDashboard() {
       </div>
 
       <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Start Mock Interview</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+      <div className="dashboard-grid" style={{ marginBottom: '40px' }}>
         <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #4ade8050', cursor: 'pointer' }} onClick={() => startInterview('MERN Stack', profile.targetCompanyType, 2)}>
           <h3 style={{ margin: '0 0 10px 0', color: '#4ade80' }}><i className="ri-code-s-slash-line"></i> MERN Stack (Round 2)</h3>
           <p style={{ color: '#888', fontSize: '14px' }}>Technical round focusing on React, Node, Express, MongoDB.</p>
@@ -94,7 +99,11 @@ export default function PlacementDashboard() {
 
       <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Past Interviews</h2>
       {interviews.length === 0 ? (
-        <div style={{ padding: '20px', background: '#111', borderRadius: '12px', color: '#888' }}>No interviews taken yet.</div>
+        <div className="empty-state">
+          <i className="ri-mic-2-line empty-state-icon"></i>
+          <h3 className="empty-state-title">No Interviews Taken</h3>
+          <p className="empty-state-text">Start a mock interview above to practice!</p>
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {interviews.map(int => (

@@ -66,9 +66,8 @@ export default function NotificationsPage() {
           {notifications.some(n => !n.isRead) && (
             <button
               onClick={markAllAsRead}
-              style={{ padding: '6px 12px', background: 'transparent', color: '#3b82f6', border: '1px solid #3b82f6', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s' }}
-              onMouseOver={e => { e.target.style.background = 'rgba(59, 130, 246, 0.1)'; }}
-              onMouseOut={e => { e.target.style.background = 'transparent'; }}
+              className="btn btn-sm"
+              style={{ background: 'transparent', color: '#3b82f6', border: '1px solid #3b82f6' }}
             >
               Mark all as read
             </button>
@@ -81,9 +80,10 @@ export default function NotificationsPage() {
             <p>Loading notifications...</p>
           </div>
         ) : notifications.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', background: '#1a1a1a', borderRadius: '8px', border: '1px solid #333' }}>
-            <span className="material-icons" style={{ fontSize: '48px', color: '#444', marginBottom: '10px' }}>notifications_off</span>
-            <p style={{ color: '#888' }}>No notifications yet</p>
+          <div className="empty-state">
+            <i className="ri-notification-off-line empty-state-icon" />
+            <h3 className="empty-state-title">No notifications yet</h3>
+            <p className="empty-state-text">You're all caught up!</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>

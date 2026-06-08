@@ -71,7 +71,8 @@ export default function AssignmentGradingModal({ assignment, onClose }) {
           ) : submissions.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#888', marginTop: '40px' }}>No submissions yet.</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#1a1a1a', borderRadius: '8px', overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto', width: '100%' }}>
+<table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#1a1a1a', borderRadius: '8px', overflow: 'hidden' }}>
               <thead>
                 <tr style={{ background: '#222', color: '#888', borderBottom: '1px solid #333' }}>
                   <th style={{ padding: '15px', fontWeight: 'normal' }}>Student</th>
@@ -129,6 +130,7 @@ export default function AssignmentGradingModal({ assignment, onClose }) {
                 ))}
               </tbody>
             </table>
+</div>
           )}
         </div>
       </div>

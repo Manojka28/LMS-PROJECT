@@ -47,37 +47,45 @@ export default function InstructorQuizAnalyticsModal({ course, onClose }) {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading analytics...</div>
+          <div className="loading-state" style={{ minHeight: '200px' }}>
+            <div className="loading-spinner" />
+            <span className="loading-state-text">Loading analytics...</span>
+          </div>
         ) : !analytics || analytics.attempts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>No quiz attempts recorded yet.</div>
+          <div className="empty-state" style={{ border: 'none', background: 'transparent' }}>
+            <i className="ri-bar-chart-2-line empty-state-icon" />
+            <p className="empty-state-text">No quiz attempts recorded yet.</p>
+          </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#1a1a1a', borderRadius: '8px', overflow: 'hidden' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #333', color: '#888', background: '#222' }}>
-                <th style={{ padding: '12px', fontWeight: 'normal' }}>Student</th>
-                <th style={{ padding: '12px', fontWeight: 'normal' }}>Lecture (Quiz)</th>
-                <th style={{ padding: '12px', fontWeight: 'normal' }}>Score</th>
-                <th style={{ padding: '12px', fontWeight: 'normal' }}>Attempt Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {analytics.attempts.map((attempt) => (
-                <tr key={attempt._id} style={{ borderBottom: '1px solid #2a2a2a' }}>
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ color: '#fff', fontWeight: '500' }}>{attempt.student?.name || 'Unknown User'}</div>
-                    <div style={{ fontSize: '12px', color: '#888' }}>{attempt.student?.email}</div>
-                  </td>
-                  <td style={{ padding: '12px', color: '#aaa' }}>{attempt.lecture?.title || 'Unknown Lecture'}</td>
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ color: attempt.percentage >= 80 ? '#10b981' : attempt.percentage >= 50 ? '#f59e0b' : '#ef4444', fontWeight: 'bold' }}>
-                      {attempt.score}/{attempt.totalQuestions} ({attempt.percentage}%)
-                    </div>
-                  </td>
-                  <td style={{ padding: '12px', color: '#aaa' }}>{new Date(attempt.createdAt).toLocaleString()}</td>
+          <div className="responsive-table-wrap">
+            <table className="responsive-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Lecture (Quiz)</th>
+                  <th>Score</th>
+                  <th>Attempt Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {analytics.attempts.map((attempt) => (
+                  <tr key={attempt._id}>
+                    <td>
+                      <div style={{ color: '#fff', fontWeight: '500' }}>{attempt.student?.name || 'Unknown User'}</div>
+                      <div style={{ fontSize: '12px', color: '#888' }}>{attempt.student?.email}</div>
+                    </td>
+                    <td>{attempt.lecture?.title || 'Unknown Lecture'}</td>
+                    <td>
+                      <div style={{ color: attempt.percentage >= 80 ? '#10b981' : attempt.percentage >= 50 ? '#f59e0b' : '#ef4444', fontWeight: 'bold' }}>
+                        {attempt.score}/{attempt.totalQuestions} ({attempt.percentage}%)
+                      </div>
+                    </td>
+                    <td>{new Date(attempt.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

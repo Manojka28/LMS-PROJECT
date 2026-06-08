@@ -106,9 +106,9 @@ export default function CheckoutFlow() {
     <div style={{ maxWidth: '800px', margin: '40px auto', padding: '40px', background: '#111', borderRadius: '16px', color: '#fff', border: '1px solid #333', fontFamily: 'Inter, sans-serif' }}>
       <h1 style={{ fontSize: '32px', marginBottom: '30px', fontFamily: 'Space Grotesk, sans-serif' }}>Secure Checkout</h1>
       
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '40px', background: '#1a1a1a', padding: '20px', borderRadius: '12px' }}>
-        <img src={course.thumbnail} alt={course.title} style={{ width: '150px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} />
-        <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '40px', background: '#1a1a1a', padding: '20px', borderRadius: '12px' }}>
+        <img src={course.thumbnail} alt={course.title} style={{ width: '100%', maxWidth: '150px', aspectRatio: '3/2', objectFit: 'cover', borderRadius: '8px' }} />
+        <div style={{ flex: '1 1 200px' }}>
           <h2 style={{ margin: '0 0 10px 0', fontSize: '24px' }}>{course.title}</h2>
           <p style={{ color: '#888', margin: 0 }}>By {course.instructor?.name || 'Instructor'}</p>
         </div>

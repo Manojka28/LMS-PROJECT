@@ -117,7 +117,7 @@ export default function StudentDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '50px' }}>
             <StudentAnalyticsCards analytics={analytics} />
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            <div className="dashboard-grid">
               
               <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
@@ -199,7 +199,7 @@ export default function StudentDashboard() {
             </div>
 
             {quizStats && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+              <div className="dashboard-grid">
                 <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
                   <h3 style={{ margin: '0 0 10px 0', color: '#aaa', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Quizzes Attempted</h3>
                   <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#fff' }}>{quizStats.totalQuizzesAttempted}</div>
@@ -233,7 +233,7 @@ export default function StudentDashboard() {
             )}
             
             {assignmentStats && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginTop: '10px' }}>
+              <div className="dashboard-grid" style={{ marginTop: '10px' }}>
                 <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
                   <h3 style={{ margin: '0 0 10px 0', color: '#aaa', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Assignments Submitted</h3>
                   <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#fff' }}>{assignmentStats.totalSubmitted}</div>
@@ -308,44 +308,38 @@ export default function StudentDashboard() {
           <StudentCourseGrid courses={enrolledCourses} />
         </div>
 
-        {paymentHistory && paymentHistory.length > 0 && (
-          <div style={{ marginBottom: '50px' }}>
-            <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '24px', marginBottom: '20px' }}>Purchase History</h2>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#1a1a1a', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ marginBottom: '50px' }}>
+          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '24px', marginBottom: '20px' }}>Purchase History</h2>
+          {paymentHistory && paymentHistory.length > 0 ? (
+            <div className="responsive-table-wrap">
+              <table className="responsive-table">
                 <thead>
-                  <tr style={{ background: '#222', color: '#aaa', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    <th style={{ padding: '15px 20px', borderBottom: '1px solid #333' }}>Course Name</th>
-                    <th style={{ padding: '15px 20px', borderBottom: '1px solid #333' }}>Amount</th>
-                    <th style={{ padding: '15px 20px', borderBottom: '1px solid #333' }}>Date</th>
-                    <th style={{ padding: '15px 20px', borderBottom: '1px solid #333' }}>Status</th>
-                    <th style={{ padding: '15px 20px', borderBottom: '1px solid #333' }}>Payment ID</th>
-                    <th style={{ padding: '15px 20px', borderBottom: '1px solid #333' }}>Action</th>
+                  <tr>
+                    <th>Course Name</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Payment ID</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paymentHistory.map(payment => (
-                    <tr key={payment._id} style={{ borderBottom: '1px solid #333' }}>
-                      <td style={{ padding: '15px 20px', color: '#fff' }}>{payment.courseTitle || (payment.course && payment.course.title)}</td>
-                      <td style={{ padding: '15px 20px', color: '#3b82f6', fontWeight: 'bold' }}>₹{payment.amount}</td>
-                      <td style={{ padding: '15px 20px', color: '#888' }}>{new Date(payment.createdAt).toLocaleDateString()}</td>
-                      <td style={{ padding: '15px 20px' }}>
-                        <span style={{ 
-                          padding: '4px 8px', 
-                          borderRadius: '4px', 
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          background: (payment.paymentStatus === 'paid' || payment.paymentStatus === 'enrolledAfterPayment') ? '#10b98120' : '#ef444420',
-                          color: (payment.paymentStatus === 'paid' || payment.paymentStatus === 'enrolledAfterPayment') ? '#10b981' : '#ef4444'
-                        }}>
+                    <tr key={payment._id}>
+                      <td>{payment.courseTitle || (payment.course && payment.course.title)}</td>
+                      <td style={{ color: '#3b82f6', fontWeight: 'bold' }}>₹{payment.amount}</td>
+                      <td>{new Date(payment.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <span className={`status-badge ${(payment.paymentStatus === 'paid' || payment.paymentStatus === 'enrolledAfterPayment') ? 'success' : 'danger'}`}>
                           {payment.paymentStatus.toUpperCase()}
                         </span>
                       </td>
-                      <td style={{ padding: '15px 20px', color: '#888', fontFamily: 'monospace' }}>{payment.razorpayPaymentId || 'N/A'}</td>
-                      <td style={{ padding: '15px 20px' }}>
+                      <td style={{ fontFamily: 'monospace' }}>{payment.razorpayPaymentId || 'N/A'}</td>
+                      <td>
                         <button 
                           onClick={() => setSelectedPayment(payment)}
-                          style={{ background: 'transparent', color: '#3b82f6', border: '1px solid #3b82f6', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}
+                          className="btn btn-sm"
+                          style={{ background: 'transparent', color: '#3b82f6', border: '1px solid #3b82f6' }}
                         >
                           View Details
                         </button>
@@ -355,12 +349,17 @@ export default function StudentDashboard() {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="empty-state">
+              <i className="ri-shopping-cart-2-line empty-state-icon"></i>
+              <p className="empty-state-text">No purchases found.</p>
+            </div>
+          )}
+        </div>
 
-        {certificates && certificates.length > 0 && (
-          <div>
-            <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '24px', marginBottom: '20px' }}>My Certificates</h2>
+        <div>
+          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '24px', marginBottom: '20px' }}>My Certificates</h2>
+          {certificates && certificates.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
               {certificates.map(cert => (
                 <div key={cert._id} style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333', position: 'relative' }}>
@@ -410,8 +409,13 @@ export default function StudentDashboard() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="empty-state">
+              <i className="ri-medal-line empty-state-icon"></i>
+              <p className="empty-state-text">No certificates earned yet. Keep learning!</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <ReceiptModal 

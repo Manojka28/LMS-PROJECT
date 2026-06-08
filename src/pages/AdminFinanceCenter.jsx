@@ -26,7 +26,12 @@ export default function AdminFinanceCenter() {
     }
   };
 
-  if (loading) return <div style={{ color: '#fff', textAlign: 'center', padding: '50px' }}>Loading Finance Data...</div>;
+  if (loading) return (
+    <div className="admin-loading-state">
+      <div className="admin-loading-spinner" />
+      <p>Loading Finance Data...</p>
+    </div>
+  );
 
   const { orders, refunds, metrics } = data;
 
@@ -55,24 +60,29 @@ export default function AdminFinanceCenter() {
         {/* RECENT TRANSACTIONS */}
         <div>
           <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Recent Successful Orders</h2>
-          <div style={{ background: '#111', borderRadius: '12px', border: '1px solid #333', overflow: 'hidden' }}>
-            {orders.length === 0 ? <div style={{ padding: '20px', color: '#888' }}>No transactions.</div> : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="admin-table-wrapper" style={{ border: '1px solid #333' }}>
+            {orders.length === 0 ? (
+              <div className="admin-empty-state">
+                <i className="ri-shopping-cart-line" />
+                <p>No transactions.</p>
+              </div>
+            ) : (
+              <table className="admin-table">
                 <thead>
-                  <tr style={{ background: '#1a1a1a', color: '#888' }}>
-                    <th style={{ padding: '15px' }}>Gateway ID</th>
-                    <th style={{ padding: '15px' }}>Course</th>
-                    <th style={{ padding: '15px' }}>Date</th>
-                    <th style={{ padding: '15px', textAlign: 'right' }}>Amount</th>
+                  <tr>
+                    <th>Gateway ID</th>
+                    <th>Course</th>
+                    <th>Date</th>
+                    <th style={{ textAlign: 'right' }}>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {orders.map(o => (
-                    <tr key={o._id} style={{ borderBottom: '1px solid #222' }}>
-                      <td style={{ padding: '15px', fontFamily: 'monospace', color: '#aaa' }}>{o.orderId}</td>
-                      <td style={{ padding: '15px' }}>{o.courseId?.title}</td>
-                      <td style={{ padding: '15px', color: '#aaa' }}>{new Date(o.createdAt).toLocaleString()}</td>
-                      <td style={{ padding: '15px', textAlign: 'right', color: '#10b981', fontWeight: 'bold' }}>${o.amount.toFixed(2)}</td>
+                    <tr key={o._id}>
+                      <td style={{ fontFamily: 'monospace', color: '#aaa' }}>{o.orderId}</td>
+                      <td>{o.courseId?.title}</td>
+                      <td style={{ color: '#aaa' }}>{new Date(o.createdAt).toLocaleString()}</td>
+                      <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 'bold' }}>${o.amount.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -84,26 +94,31 @@ export default function AdminFinanceCenter() {
         {/* PENDING REFUNDS */}
         <div>
           <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Pending Refund Requests</h2>
-          <div style={{ background: '#111', borderRadius: '12px', border: '1px solid #333', overflow: 'hidden' }}>
-            {refunds.length === 0 ? <div style={{ padding: '20px', color: '#888' }}>No pending refunds.</div> : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="admin-table-wrapper" style={{ border: '1px solid #333' }}>
+            {refunds.length === 0 ? (
+              <div className="admin-empty-state">
+                <i className="ri-refund-2-line" />
+                <p>No pending refunds.</p>
+              </div>
+            ) : (
+              <table className="admin-table">
                 <thead>
-                  <tr style={{ background: '#1a1a1a', color: '#888' }}>
-                    <th style={{ padding: '15px' }}>Student</th>
-                    <th style={{ padding: '15px' }}>Reason</th>
-                    <th style={{ padding: '15px' }}>Amount</th>
-                    <th style={{ padding: '15px', textAlign: 'right' }}>Actions</th>
+                  <tr>
+                    <th>Student</th>
+                    <th>Reason</th>
+                    <th>Amount</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {refunds.map(r => (
-                    <tr key={r._id} style={{ borderBottom: '1px solid #222' }}>
-                      <td style={{ padding: '15px' }}>{r.studentId?.name}</td>
-                      <td style={{ padding: '15px', color: '#aaa' }}>{r.reason}</td>
-                      <td style={{ padding: '15px', color: '#ef4444', fontWeight: 'bold' }}>${r.refundAmount.toFixed(2)}</td>
-                      <td style={{ padding: '15px', textAlign: 'right' }}>
-                        <button style={{ padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '10px' }}>Approve</button>
-                        <button style={{ padding: '6px 12px', background: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Reject</button>
+                    <tr key={r._id}>
+                      <td>{r.studentId?.name}</td>
+                      <td style={{ color: '#aaa' }}>{r.reason}</td>
+                      <td style={{ color: '#ef4444', fontWeight: 'bold' }}>${r.refundAmount.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="admin-badge success" style={{ cursor: 'pointer', marginRight: '10px' }}>Approve</button>
+                        <button className="admin-badge danger" style={{ cursor: 'pointer' }}>Reject</button>
                       </td>
                     </tr>
                   ))}

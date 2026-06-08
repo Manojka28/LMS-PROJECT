@@ -220,20 +220,26 @@ export default function CareerRoadmapPage() {
       <div>
         <h2 style={{ fontSize: '28px', marginBottom: '20px', fontFamily: 'Space Grotesk, sans-serif' }}>Weekly Execution Plan</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-          {milestones.map((milestone) => (
-            <div key={milestone._id} style={{ background: '#111', borderRadius: '16px', border: '1px solid #333', overflow: 'hidden' }}>
-              <div style={{ padding: '20px', background: '#1a1a1a', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '20px', color: milestone.status === 'Completed' ? '#10b981' : '#fff' }}>
-                    Week {milestone.weekNumber}: {milestone.title}
-                  </h3>
-                  <p style={{ margin: '5px 0 0 0', color: '#888', fontSize: '14px' }}>{milestone.description}</p>
+          {milestones.length === 0 ? (
+            <div style={{ color: '#888', padding: '40px', textAlign: 'center', background: '#111', borderRadius: '16px', border: '1px solid #333' }}>
+              <i className="ri-road-map-line" style={{ fontSize: '48px', marginBottom: '10px', display: 'block' }}></i>
+              <p style={{ margin: 0 }}>No milestones generated. Try generating a new roadmap to see your path.</p>
+            </div>
+          ) : (
+            milestones.map((milestone) => (
+              <div key={milestone._id} style={{ background: '#111', borderRadius: '16px', border: '1px solid #333', overflow: 'hidden' }}>
+                <div style={{ padding: '20px', background: '#1a1a1a', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '20px', color: milestone.status === 'Completed' ? '#10b981' : '#fff' }}>
+                      Week {milestone.weekNumber}: {milestone.title}
+                    </h3>
+                    <p style={{ margin: '5px 0 0 0', color: '#888', fontSize: '14px' }}>{milestone.description}</p>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: '20px' }}>{milestone.completionPercentage}%</div>
+                    <div style={{ color: '#666', fontSize: '12px' }}>{milestone.status}</div>
+                  </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: '20px' }}>{milestone.completionPercentage}%</div>
-                  <div style={{ color: '#666', fontSize: '12px' }}>{milestone.status}</div>
-                </div>
-              </div>
               
               <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                 {milestone.tasks && milestone.tasks.map(task => (
@@ -275,7 +281,7 @@ export default function CareerRoadmapPage() {
                 ))}
               </div>
             </div>
-          ))}
+          )))}
         </div>
       </div>
       

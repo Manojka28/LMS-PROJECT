@@ -21,34 +21,48 @@ export default function AdminAuditLogsTable() {
     }
   };
 
-  if (loading) return <div style={{ padding: '20px', color: '#888' }}>Loading Audit Logs...</div>;
-
   return (
-    <div style={{ background: '#111', borderRadius: '12px', border: '1px solid #333', padding: '20px' }}>
-      <h2 style={{ fontSize: '20px', marginBottom: '20px' }}>System Audit Logs</h2>
-      {logs.length === 0 ? (
-        <p style={{ color: '#888' }}>No audit logs generated yet.</p>
+    <div className="admin-panel">
+      <div className="admin-panel-header">
+        <div>
+          <h2 className="admin-panel-title">System Audit Logs</h2>
+          <p className="admin-panel-sub">Recent system activity and events</p>
+        </div>
+      </div>
+      
+      {loading ? (
+        <div className="admin-loading-state">
+          <div className="admin-loading-spinner" />
+          <p>Loading audit logs...</p>
+        </div>
+      ) : logs.length === 0 ? (
+        <div className="admin-empty-state">
+          <i className="ri-history-line" />
+          <p>No audit logs generated yet.</p>
+        </div>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ background: '#1a1a1a', color: '#888' }}>
-              <th style={{ padding: '12px' }}>Timestamp</th>
-              <th style={{ padding: '12px' }}>Action</th>
-              <th style={{ padding: '12px' }}>User</th>
-              <th style={{ padding: '12px' }}>Resource Type</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.map(log => (
-              <tr key={log._id} style={{ borderBottom: '1px solid #222' }}>
-                <td style={{ padding: '12px', color: '#aaa' }}>{new Date(log.createdAt).toLocaleString()}</td>
-                <td style={{ padding: '12px', fontWeight: 'bold' }}>{log.action}</td>
-                <td style={{ padding: '12px' }}>{log.userId?.name || 'System'}</td>
-                <td style={{ padding: '12px', color: '#aaa' }}>{log.resourceType || 'N/A'}</td>
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Action</th>
+                <th>User</th>
+                <th>Resource Type</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {logs.map(log => (
+                <tr key={log._id}>
+                  <td className="admin-text-small">{new Date(log.createdAt).toLocaleString()}</td>
+                  <td style={{ fontWeight: '600' }}>{log.action}</td>
+                  <td>{log.userId?.name || 'System'}</td>
+                  <td><span className="admin-badge info">{log.resourceType || 'N/A'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

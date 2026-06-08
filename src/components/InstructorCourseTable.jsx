@@ -110,117 +110,120 @@ export default function InstructorCourseTable({
         </div>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="responsive-table-wrap">
+        <table className="responsive-table">
           <thead>
-            <tr style={{ borderBottom: '1px solid #333', color: '#888' }}>
-              <th style={{ padding: '12px', fontWeight: 'normal' }}>Course</th>
-              <th style={{ padding: '12px', fontWeight: 'normal' }}>Category</th>
-              <th style={{ padding: '12px', fontWeight: 'normal' }}>Price</th>
-              <th style={{ padding: '12px', fontWeight: 'normal' }}>Enrolled Students</th>
-              <th style={{ padding: '12px', fontWeight: 'normal' }}>Status</th>
-              <th style={{ padding: '12px', fontWeight: 'normal', textAlign: 'right' }}>Actions</th>
+            <tr>
+              <th>Course</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Enrolled Students</th>
+              <th>Status</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading courses...</td>
+                <td colSpan="6" style={{ padding: '40px 0' }}>
+                  <div className="loading-state" style={{ minHeight: 'auto', padding: '20px' }}>
+                    <div className="loading-spinner" style={{ width: '30px', height: '30px' }} />
+                    <span className="loading-state-text">Loading courses...</span>
+                  </div>
+                </td>
               </tr>
             ) : courses.length === 0 ? (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#888' }}>No courses found.</td>
+                <td colSpan="6" style={{ padding: 0 }}>
+                  <div className="empty-state" style={{ border: 'none', background: 'transparent' }}>
+                    <i className="ri-book-open-line empty-state-icon" />
+                    <h3 className="empty-state-title">No Courses Found</h3>
+                    <p className="empty-state-text">You haven't created any courses that match this filter.</p>
+                  </div>
+                </td>
               </tr>
             ) : (
               courses.map((course) => (
-                <tr key={course._id} style={{ borderBottom: '1px solid #222', transition: 'background 0.2s' }}>
-                  <td style={{ padding: '12px' }}>
+                <tr key={course._id}>
+                  <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <img src={course.thumbnail} alt={course.title} style={{ width: '50px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
                       <div>
-                        <div style={{ fontWeight: '500' }}>{course.title}</div>
+                        <div style={{ fontWeight: '500', color: '#fff' }}>{course.title}</div>
                         <div style={{ fontSize: '0.8rem', color: '#888' }}>{course.level}</div>
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '12px', color: '#aaa' }}>{course.category}</td>
-                  <td style={{ padding: '12px', color: '#aaa' }}>${course.price.toFixed(2)}</td>
-                  <td style={{ padding: '12px', color: '#aaa' }}>{course.enrolledCount}</td>
-                  <td style={{ padding: '12px' }}>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '0.8rem',
-                      background: course.isPublished ? '#10b98120' : '#f59e0b20',
-                      color: course.isPublished ? '#10b981' : '#f59e0b',
-                    }}>
+                  <td>{course.category}</td>
+                  <td>${course.price.toFixed(2)}</td>
+                  <td>{course.enrolledCount}</td>
+                  <td>
+                    <span className={`status-badge ${course.isPublished ? 'success' : 'warning'}`}>
                       {course.isPublished ? 'Published' : 'Draft'}
                     </span>
                   </td>
-                  <td style={{ padding: '12px', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
                       <button
                         onClick={() => handleViewStudents(course)}
-                        className="ripple-btn"
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#3b82f630', color: '#3b82f6', border: '1px solid #3b82f650' }}
+                        className="btn btn-sm"
+                        style={{ background: '#3b82f630', color: '#3b82f6', border: '1px solid #3b82f650' }}
                       >
                         Students
                       </button>
                       <button
                         onClick={() => handleViewReviews(course)}
-                        className="ripple-btn"
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#8b5cf630', color: '#8b5cf6', border: '1px solid #8b5cf650' }}
+                        className="btn btn-sm"
+                        style={{ background: '#8b5cf630', color: '#8b5cf6', border: '1px solid #8b5cf650' }}
                       >
                         Reviews
                       </button>
                       <button
                         onClick={() => setQuizModalCourse(course)}
-                        className="ripple-btn"
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ec489930', color: '#ec4899', border: '1px solid #ec489950' }}
+                        className="btn btn-sm"
+                        style={{ background: '#ec489930', color: '#ec4899', border: '1px solid #ec489950' }}
                       >
                         Quizzes
                       </button>
                       <button
                         onClick={() => setQuizAnalyticsCourse(course)}
-                        className="ripple-btn"
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#06b6d430', color: '#06b6d4', border: '1px solid #06b6d450' }}
+                        className="btn btn-sm"
+                        style={{ background: '#06b6d430', color: '#06b6d4', border: '1px solid #06b6d450' }}
                       >
                         Quiz Stats
                       </button>
                       <button
                         onClick={() => setAssignmentModalCourse(course)}
-                        className="ripple-btn"
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#eab30830', color: '#eab308', border: '1px solid #eab30850' }}
+                        className="btn btn-sm"
+                        style={{ background: '#eab30830', color: '#eab308', border: '1px solid #eab30850' }}
                       >
                         Assignments
                       </button>
                       <button
                         onClick={() => setAssignmentAnalyticsCourse(course)}
-                        className="ripple-btn"
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#14b8a630', color: '#14b8a6', border: '1px solid #14b8a650' }}
+                        className="btn btn-sm"
+                        style={{ background: '#14b8a630', color: '#14b8a6', border: '1px solid #14b8a650' }}
                       >
                         Asgn Stats
                       </button>
                       <button
                         onClick={() => navigate(`/instructor/edit-course/${course._id}`)}
-                        className="ripple-btn"
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#333' }}
+                        className="btn btn-sm"
+                        style={{ background: '#333' }}
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => navigate(`/instructor/course-intelligence/${course._id}`)}
-                        className="ripple-btn"
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#3b82f6', color: '#fff', border: '1px solid #2563eb', fontWeight: 'bold' }}
+                        className="btn btn-sm"
+                        style={{ background: '#3b82f6', color: '#fff', border: '1px solid #2563eb' }}
                       >
                         <i className="ri-radar-line" style={{ marginRight: '4px' }}></i> AI Intelligence
                       </button>
                       <button
                         onClick={() => onPublishToggle(course._id, !course.isPublished)}
-                        className="ripple-btn"
+                        className="btn btn-sm"
                         style={{
-                          padding: '6px 12px',
-                          fontSize: '0.8rem',
                           background: course.isPublished ? '#f59e0b30' : '#10b98130',
                           color: course.isPublished ? '#f59e0b' : '#10b981',
                           border: `1px solid ${course.isPublished ? '#f59e0b50' : '#10b98150'}`
@@ -234,8 +237,8 @@ export default function InstructorCourseTable({
                             onDelete(course._id);
                           }
                         }}
-                        className="ripple-btn"
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ef444430', color: '#ef4444', border: '1px solid #ef444450' }}
+                        className="btn btn-sm"
+                        style={{ background: '#ef444430', color: '#ef4444', border: '1px solid #ef444450' }}
                       >
                         Delete
                       </button>
@@ -303,39 +306,48 @@ export default function InstructorCourseTable({
             </div>
 
             {loadingStudents ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading students...</div>
+              <div className="loading-state">
+                <div className="loading-spinner" />
+                <span className="loading-state-text">Loading students...</span>
+              </div>
             ) : studentsList.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>No students enrolled in this course</div>
+              <div className="empty-state">
+                <i className="ri-user-unfollow-line empty-state-icon" />
+                <h3 className="empty-state-title">No Students</h3>
+                <p className="empty-state-text">No students have enrolled in this course yet.</p>
+              </div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: '#1a1a1a', borderRadius: '8px', overflow: 'hidden' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #333', color: '#888', background: '#222' }}>
-                    <th style={{ padding: '12px', fontWeight: 'normal' }}>Name</th>
-                    <th style={{ padding: '12px', fontWeight: 'normal' }}>Email</th>
-                    <th style={{ padding: '12px', fontWeight: 'normal' }}>Progress</th>
-                    <th style={{ padding: '12px', fontWeight: 'normal' }}>Lectures Completed</th>
-                    <th style={{ padding: '12px', fontWeight: 'normal' }}>Enrollment Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {studentsList.map((student) => (
-                    <tr key={student._id} style={{ borderBottom: '1px solid #2a2a2a' }}>
-                      <td style={{ padding: '12px', color: '#fff' }}>{student.name}</td>
-                      <td style={{ padding: '12px', color: '#aaa' }}>{student.email}</td>
-                      <td style={{ padding: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ flex: 1, background: '#333', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
-                            <div style={{ width: `${student.completionPercentage}%`, background: '#10b981', height: '100%' }} />
-                          </div>
-                          <span style={{ fontSize: '0.8rem', color: '#888', minWidth: '30px' }}>{student.completionPercentage}%</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '12px', color: '#aaa' }}>{student.completedLectures}</td>
-                      <td style={{ padding: '12px', color: '#aaa' }}>{new Date(student.enrollmentDate).toLocaleDateString()}</td>
+              <div className="responsive-table-wrap">
+                <table className="responsive-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Progress</th>
+                      <th>Lectures Completed</th>
+                      <th>Enrollment Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {studentsList.map((student) => (
+                      <tr key={student._id}>
+                        <td>{student.name}</td>
+                        <td>{student.email}</td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '150px' }}>
+                            <div style={{ flex: 1, background: '#333', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ width: `${student.completionPercentage}%`, background: '#10b981', height: '100%' }} />
+                            </div>
+                            <span style={{ fontSize: '0.8rem', color: '#888', minWidth: '35px' }}>{Math.round(student.completionPercentage)}%</span>
+                          </div>
+                        </td>
+                        <td>{student.completedLectures}</td>
+                        <td>{new Date(student.enrollmentDate).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -370,28 +382,44 @@ export default function InstructorCourseTable({
             </div>
 
             {loadingReviews ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading reviews...</div>
+              <div className="loading-state">
+                <div className="loading-spinner" />
+                <span className="loading-state-text">Loading reviews...</span>
+              </div>
             ) : reviewsList.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>No reviews submitted for this course</div>
+              <div className="empty-state">
+                <i className="ri-star-line empty-state-icon" />
+                <h3 className="empty-state-title">No Reviews</h3>
+                <p className="empty-state-text">This course hasn't received any reviews yet.</p>
+              </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {reviewsList.map(rev => (
-                  <div key={rev._id} style={{ background: '#1a1a1a', padding: '20px', borderRadius: '8px', border: '1px solid #333' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                      <div>
-                        <div style={{ fontWeight: 'bold', color: '#fff' }}>{rev.user?.name || 'Unknown Student'}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#888' }}>{rev.user?.email}</div>
-                      </div>
-                      <div style={{ color: '#f59e0b', fontSize: '14px' }}>
-                        {'★'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}
-                      </div>
-                    </div>
-                    <p style={{ color: '#ccc', margin: 0, lineHeight: '1.6' }}>{rev.review}</p>
-                    <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
-                      {new Date(rev.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
+              <div className="responsive-table-wrap">
+                <table className="responsive-table">
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>Rating</th>
+                      <th>Comment</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reviewsList.map((review) => (
+                      <tr key={review._id}>
+                        <td>{review.student?.name || 'Unknown'}</td>
+                        <td>
+                          <span style={{ color: '#fbbf24' }}>
+                            {'★'.repeat(Math.round(review.rating))}
+                            {'☆'.repeat(5 - Math.round(review.rating))}
+                          </span>
+                          <span style={{ marginLeft: '8px', color: '#fff' }}>{review.rating}</span>
+                        </td>
+                        <td style={{ maxWidth: '300px', whiteSpace: 'normal' }}>{review.comment || '-'}</td>
+                        <td>{new Date(review.createdAt).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

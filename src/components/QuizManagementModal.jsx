@@ -87,8 +87,8 @@ export default function QuizManagementModal({ course, onClose }) {
       if (q.options.some(opt => !opt)) return alert(`All options for question ${i + 1} are required.`);
     }
 
-    setSaving(true);
     try {
+      setSaving(true);
       if (quiz) {
         // update
         await api.put(`/quiz/${quiz._id}`, { questions });
@@ -138,9 +138,9 @@ export default function QuizManagementModal({ course, onClose }) {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Loading...</div>
         ) : (
-          <div style={{ display: 'flex', gap: '20px', flex: 1, minHeight: 0 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', flex: 1, minHeight: 0 }}>
             {/* Left: Lectures List */}
-            <div style={{ width: '300px', background: '#1a1a1a', borderRadius: '8px', padding: '15px', overflowY: 'auto', border: '1px solid #333' }}>
+            <div style={{ flex: '1 1 250px', background: '#1a1a1a', borderRadius: '8px', padding: '15px', overflowY: 'auto', border: '1px solid #333' }}>
               <h3 style={{ marginTop: 0, fontSize: '16px' }}>Select Lecture</h3>
               {sections.map((sec, sIdx) => (
                 <div key={sec._id} style={{ marginBottom: '15px' }}>

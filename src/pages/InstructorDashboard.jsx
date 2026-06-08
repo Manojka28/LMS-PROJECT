@@ -134,7 +134,7 @@ export default function InstructorDashboard() {
       {discussionAnalytics && (
         <div style={{ marginTop: '20px', background: '#111', padding: '20px', borderRadius: '8px', border: '1px solid #333' }}>
           <h3 style={{ margin: '0 0 15px 0' }}>Discussion Q&A Analytics</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+          <div className="dashboard-grid">
             <div style={{ padding: '15px', background: '#1a1a1a', borderRadius: '6px', border: '1px solid #222' }}>
               <div style={{ fontSize: '14px', color: '#888' }}>Total Questions</div>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#fff' }}>{discussionAnalytics.totalQuestions}</div>
@@ -155,7 +155,7 @@ export default function InstructorDashboard() {
         <div style={{ marginTop: '40px', marginBottom: '40px' }}>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '20px' }}>Certificate Analytics</h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+          <div className="dashboard-grid" style={{ marginBottom: '30px' }}>
             <div style={{ padding: '20px', background: '#1a1a1a', borderRadius: '12px', border: '1px solid #333' }}>
               <div style={{ fontSize: '14px', color: '#888', marginBottom: '10px' }}>Total Issued</div>
               <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#fff' }}>{certificateAnalytics.totalIssued}</div>
@@ -170,7 +170,7 @@ export default function InstructorDashboard() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+          <div className="dashboard-grid-2col">
             <div style={{ background: '#1a1a1a', borderRadius: '12px', padding: '20px', border: '1px solid #333' }}>
               <h3 style={{ fontSize: '18px', marginBottom: '20px' }}>Certificates Per Course</h3>
               {certificateAnalytics.certificatesPerCourse.length === 0 ? (
@@ -223,21 +223,21 @@ export default function InstructorDashboard() {
       {analytics?.revenuePerCourse && analytics.revenuePerCourse.length > 0 && (
         <div style={{ marginTop: '40px', marginBottom: '40px' }}>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '20px' }}>Top Selling Courses</h2>
-          <div style={{ overflowX: 'auto', background: '#1a1a1a', borderRadius: '12px', padding: '20px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="responsive-table-wrap">
+            <table className="responsive-table">
               <thead>
-                <tr style={{ color: '#aaa', borderBottom: '1px solid #333' }}>
-                  <th style={{ padding: '12px 10px' }}>Course Title</th>
-                  <th style={{ padding: '12px 10px' }}>Paid Enrollments</th>
-                  <th style={{ padding: '12px 10px' }}>Total Revenue</th>
+                <tr>
+                  <th>Course Title</th>
+                  <th>Paid Enrollments</th>
+                  <th>Total Revenue</th>
                 </tr>
               </thead>
               <tbody>
                 {analytics.revenuePerCourse.slice(0, 5).map((rev, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #333' }}>
-                    <td style={{ padding: '12px 10px', color: '#fff' }}>{rev.courseTitle}</td>
-                    <td style={{ padding: '12px 10px', color: '#fff' }}>{rev.paidEnrollments}</td>
-                    <td style={{ padding: '12px 10px', color: '#10b981', fontWeight: 'bold' }}>₹{rev.revenue}</td>
+                  <tr key={idx}>
+                    <td>{rev.courseTitle}</td>
+                    <td>{rev.paidEnrollments}</td>
+                    <td style={{ color: '#10b981', fontWeight: 'bold' }}>₹{rev.revenue}</td>
                   </tr>
                 ))}
               </tbody>
@@ -249,19 +249,19 @@ export default function InstructorDashboard() {
       {analytics?.topWishlistedCourses && analytics.topWishlistedCourses.length > 0 && (
         <div style={{ marginTop: '40px', marginBottom: '40px' }}>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '20px' }}>Top Wishlisted Courses</h2>
-          <div style={{ overflowX: 'auto', background: '#1a1a1a', borderRadius: '12px', padding: '20px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="responsive-table-wrap">
+            <table className="responsive-table">
               <thead>
-                <tr style={{ color: '#aaa', borderBottom: '1px solid #333' }}>
-                  <th style={{ padding: '12px 10px' }}>Course Title</th>
-                  <th style={{ padding: '12px 10px' }}>Wishlist Count</th>
+                <tr>
+                  <th>Course Title</th>
+                  <th>Wishlist Count</th>
                 </tr>
               </thead>
               <tbody>
                 {analytics.topWishlistedCourses.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #333' }}>
-                    <td style={{ padding: '12px 10px', color: '#fff' }}>{item.title}</td>
-                    <td style={{ padding: '12px 10px', color: '#ef4444', fontWeight: 'bold' }}>{item.count} <i className="ri-heart-3-fill" /></td>
+                  <tr key={idx}>
+                    <td>{item.title}</td>
+                    <td style={{ color: '#ef4444', fontWeight: 'bold' }}>{item.count} <i className="ri-heart-3-fill" /></td>
                   </tr>
                 ))}
               </tbody>
