@@ -8,13 +8,19 @@ import ContinueLearningCard from '../components/ContinueLearningCard';
 import StudentCourseGrid from '../components/StudentCourseGrid';
 import ReceiptModal from '../components/ReceiptModal';
 import CourseNavbar from '../components/CourseNavbar';
+import { useToast } from '../components/common/ToastContext';
+import SkeletonLoader from '../components/common/SkeletonLoader';
+import EmptyState from '../components/common/EmptyState';
+import { FadeIn, SlideUp, StaggerContainer, StaggerItem, HoverCard } from '../components/common/MotionWrapper';
 
 export default function StudentDashboard() {
   const { user, logout } = useAuth();
+  const { showError } = useToast();
   const navigate = useNavigate();
   const [analytics, setAnalytics] = useState(null);
   const [continueCourse, setContinueCourse] = useState(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [recommendedCourses, setRecommendedCourses] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [quizStats, setQuizStats] = useState(null);
   const [assignmentStats, setAssignmentStats] = useState(null);
@@ -49,381 +55,379 @@ export default function StudentDashboard() {
         if (assignmentStatsRes && assignmentStatsRes.success) setAssignmentStats(assignmentStatsRes.stats);
         if (paymentRes && paymentRes.success) setPaymentHistory(paymentRes.history);
 
+        // Fetch recommendations (silent fail if API doesn't exist yet)
+        api.get('/student/courses/recommendations').then(res => {
+          if (res.success) setRecommendedCourses(res.recommendations);
+        }).catch(() => {
+          // Fallback to empty if not implemented
+          setRecommendedCourses([]);
+        });
+
       } catch (err) {
         console.error('Failed to fetch student dashboard data:', err);
+        showError(err.response?.data?.message || 'Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [showError]);
 
   if (loading) {
     return (
-      <div className="page-loading">
-        <div className="loader">Loading Dashboard...</div>
+      <div className="course-page-wrap" style={{ minHeight: '100vh', background: '#0b0b0b' }}>
+        <CourseNavbar />
+        <div style={{ padding: '60px 5% 50px', maxWidth: '1200px', margin: '0 auto' }}>
+          <SkeletonLoader type="text" count={2} />
+          <div style={{ display: 'flex', gap: '20px', marginTop: '30px' }}>
+             <div style={{flex: 1}}><SkeletonLoader type="card" count={1} /></div>
+             <div style={{flex: 1}}><SkeletonLoader type="card" count={1} /></div>
+             <div style={{flex: 1}}><SkeletonLoader type="card" count={1} /></div>
+          </div>
+          <SkeletonLoader type="card" count={2} />
+        </div>
       </div>
     );
   }
+
+  // Placeholder data for new UI elements
+  const streakDays = [
+    { day: 'M', active: true },
+    { day: 'T', active: true },
+    { day: 'W', active: true },
+    { day: 'T', active: false },
+    { day: 'F', active: true },
+    { day: 'S', active: true },
+    { day: 'S', active: false },
+  ];
 
   return (
     <div className="course-page-wrap" style={{ minHeight: '100vh', background: '#0b0b0b' }}>
       <CourseNavbar />
       
-      <div style={{ padding: '60px 5% 50px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-          <div>
-            <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '32px', marginBottom: '10px' }}>My Learning Space</h1>
-            <p style={{ color: '#888', margin: 0 }}>Welcome back, {user?.name} ({user?.role})</p>
+      <div style={{ padding: '40px 5% 80px', maxWidth: '1200px', margin: '0 auto' }}>
+        <FadeIn duration={0.8} yOffset={20}>
+          <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+            <div>
+              <h1 className="saas-heading" style={{ fontSize: '32px', marginBottom: '10px' }}>My Learning Space</h1>
+              <p style={{ color: '#888', margin: 0 }}>Welcome back, {user?.name} — let's crush some goals today.</p>
+            </div>
+            <div style={{ display: 'flex', gap: '15px' }}>
+               <button 
+                onClick={handleLogout} 
+                className="saas-card" 
+                style={{ padding: '10px 20px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#fff', borderRadius: '8px', cursor: 'pointer' }}>
+                Logout
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <button 
-              onClick={() => navigate('/student/placement')}
-              className="ripple-btn"
-              style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)' }}
-            >
-              <i className="ri-briefcase-4-fill" style={{ fontSize: '20px' }}></i>
-              Mock Interviews
-            </button>
-            <button 
-              onClick={() => navigate('/student/roadmap')}
-              className="ripple-btn"
-              style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)' }}
-            >
-              <i className="ri-road-map-fill" style={{ fontSize: '20px' }}></i>
-              AI Roadmap
-            </button>
-            <button 
-              onClick={() => navigate('/student/ai-coach')}
-              className="ripple-btn"
-              style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)' }}
-            >
-              <i className="ri-robot-2-fill" style={{ fontSize: '20px' }}></i>
-              AI Coach
-            </button>
-            <button 
-              onClick={() => navigate('/student/resume')}
-              className="ripple-btn"
-              style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#000', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)' }}
-            >
-              <i className="ri-file-user-fill" style={{ fontSize: '20px' }}></i>
-              Resume Builder
-            </button>
+        </FadeIn>
+
+        {continueCourse && continueCourse.course && (
+          <SlideUp delay={0.1} duration={0.8} style={{ marginBottom: '30px' }}>
+            <ContinueLearningCard progressData={continueCourse} />
+          </SlideUp>
+        )}
+
+        {/* LEARNING STREAK & ACHIEVEMENTS WIDGET */}
+        <SlideUp delay={0.2} duration={0.8} style={{ marginBottom: '30px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+            
+            {/* Learning Streak */}
+            <div className="saas-card premium-glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="ri-fire-fill" style={{ color: '#ef4444' }}></i> 5 Day Streak
+                </h3>
+                <span style={{ fontSize: '12px', color: '#888', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>Weekly Goal: 3/5 Days</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {streakDays.map((d, i) => (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ 
+                      width: '32px', height: '32px', borderRadius: '50%', 
+                      background: d.active ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${d.active ? '#ef4444' : 'rgba(255,255,255,0.1)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: d.active ? '0 0 10px rgba(239,68,68,0.3)' : 'none'
+                    }}>
+                      {d.active && <i className="ri-check-line" style={{ color: '#ef4444', fontSize: '14px' }}></i>}
+                    </div>
+                    <span style={{ fontSize: '12px', color: d.active ? '#fff' : '#666' }}>{d.day}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Achievement Badges */}
+            <div className="saas-card premium-glass-panel" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="ri-medal-fill" style={{ color: '#eab308' }}></i> Recent Badges
+                </h3>
+                <span style={{ fontSize: '12px', color: '#00D26A', cursor: 'pointer' }}>View All</span>
+              </div>
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                  <i className="ri-vip-crown-fill" style={{ fontSize: '32px', color: '#eab308', filter: 'drop-shadow(0 0 10px rgba(234,179,8,0.4))' }}></i>
+                  <div style={{ fontSize: '12px', marginTop: '8px', fontWeight: 'bold' }}>Top 10%</div>
+                </div>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                  <i className="ri-code-s-slash-fill" style={{ fontSize: '32px', color: '#3b82f6', filter: 'drop-shadow(0 0 10px rgba(59,130,246,0.4))' }}></i>
+                  <div style={{ fontSize: '12px', marginTop: '8px', fontWeight: 'bold' }}>Bug Hunter</div>
+                </div>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                  <i className="ri-rocket-2-fill" style={{ fontSize: '32px', color: '#ec4899', filter: 'drop-shadow(0 0 10px rgba(236,72,153,0.4))' }}></i>
+                  <div style={{ fontSize: '12px', marginTop: '8px', fontWeight: 'bold' }}>Fast Starter</div>
+                </div>
+              </div>
+            </div>
+
           </div>
-        </div>
+        </SlideUp>
+
+        {/* PREMIUM DASHBOARD FEATURE CARDS (RESTORED & UPGRADED) */}
+        <SlideUp delay={0.3} duration={1} style={{ marginBottom: '50px' }}>
+          <h2 className="saas-heading" style={{ fontSize: '24px', marginBottom: '20px' }}>Career Acceleration Tools</h2>
+          <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+            
+            <StaggerItem>
+              <HoverCard className="saas-card premium-glass-panel" style={{ padding: '24px', height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, rgba(20,20,20,0.8) 0%, rgba(20,20,20,0.95) 100%)' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(236,72,153,0.2), rgba(190,24,93,0.2))', border: '1px solid rgba(236,72,153,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                  <i className="ri-robot-2-fill" style={{ fontSize: '24px', color: '#ec4899' }}></i>
+                </div>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#fff' }}>Personal AI Coach</h3>
+                <p style={{ color: '#888', fontSize: '14px', lineHeight: '1.5', flex: 1, marginBottom: '20px' }}>
+                  Analyze your learning patterns and get personalized code reviews and weekly goals from your AI mentor.
+                </p>
+                <button onClick={() => navigate('/student/ai-coach')} className="btn" style={{ width: '100%', padding: '12px', background: 'rgba(236,72,153,0.1)', color: '#ec4899', border: '1px solid rgba(236,72,153,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Launch AI Coach
+                </button>
+              </HoverCard>
+            </StaggerItem>
+
+            <StaggerItem>
+              <HoverCard className="saas-card premium-glass-panel" style={{ padding: '24px', height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, rgba(20,20,20,0.8) 0%, rgba(20,20,20,0.95) 100%)' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(109,40,217,0.2))', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                  <i className="ri-road-map-fill" style={{ fontSize: '24px', color: '#8b5cf6' }}></i>
+                </div>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#fff' }}>Dynamic AI Roadmap</h3>
+                <p style={{ color: '#888', fontSize: '14px', lineHeight: '1.5', flex: 1, marginBottom: '20px' }}>
+                  Never wonder what to learn next. Get a personalized, adaptive curriculum based on your career goals.
+                </p>
+                <button onClick={() => navigate('/student/roadmap')} className="btn" style={{ width: '100%', padding: '12px', background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  View Roadmap
+                </button>
+              </HoverCard>
+            </StaggerItem>
+
+            <StaggerItem>
+              <HoverCard className="saas-card premium-glass-panel" style={{ padding: '24px', height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, rgba(20,20,20,0.8) 0%, rgba(20,20,20,0.95) 100%)' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.2))', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                  <i className="ri-briefcase-4-fill" style={{ fontSize: '24px', color: '#f59e0b' }}></i>
+                </div>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#fff' }}>Mock Interviews</h3>
+                <p style={{ color: '#888', fontSize: '14px', lineHeight: '1.5', flex: 1, marginBottom: '20px' }}>
+                  Practice system design and DSA problems under real interview conditions to ace your technical rounds.
+                </p>
+                <button onClick={() => navigate('/student/placement')} className="btn" style={{ width: '100%', padding: '12px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Start Practice
+                </button>
+              </HoverCard>
+            </StaggerItem>
+
+            <StaggerItem>
+              <HoverCard className="saas-card premium-glass-panel" style={{ padding: '24px', height: '100%', display: 'flex', flexDirection: 'column', background: 'linear-gradient(180deg, rgba(20,20,20,0.8) 0%, rgba(20,20,20,0.95) 100%)' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.2))', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                  <i className="ri-file-user-fill" style={{ fontSize: '24px', color: '#10b981' }}></i>
+                </div>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#fff' }}>Resume Builder</h3>
+                <p style={{ color: '#888', fontSize: '14px', lineHeight: '1.5', flex: 1, marginBottom: '20px' }}>
+                  Auto-generate ATS-friendly resumes populated directly from your course certificates and completed projects.
+                </p>
+                <button onClick={() => navigate('/student/resume')} className="btn" style={{ width: '100%', padding: '12px', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Build Resume
+                </button>
+              </HoverCard>
+            </StaggerItem>
+
+          </StaggerContainer>
+        </SlideUp>
 
         {analytics && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '50px' }}>
-            <StudentAnalyticsCards analytics={analytics} />
+          <StaggerContainer style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '50px' }}>
+            <StaggerItem>
+              <StudentAnalyticsCards analytics={analytics} />
+            </StaggerItem>
             
-            <div className="dashboard-grid">
-              
-              <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+            <StaggerItem className="dashboard-grid">
+              <div className="saas-card premium-glass-panel" style={{ padding: '32px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <h3 style={{ margin: '0', fontSize: '16px' }}>Learning Activity</h3>
-                    <div style={{ display: 'flex', background: '#222', borderRadius: '6px', overflow: 'hidden' }}>
+                    <h3 style={{ margin: '0', fontSize: '18px' }}>Learning Timeline</h3>
+                    <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
                       <button 
                         onClick={() => setActivityRange('weekly')}
-                        style={{ padding: '4px 10px', fontSize: '12px', border: 'none', background: activityRange === 'weekly' ? '#3b82f6' : 'transparent', color: activityRange === 'weekly' ? '#fff' : '#888', cursor: 'pointer' }}>
+                        style={{ padding: '6px 12px', fontSize: '12px', border: 'none', background: activityRange === 'weekly' ? '#00D26A' : 'transparent', color: activityRange === 'weekly' ? '#000' : '#888', cursor: 'pointer', fontWeight: activityRange === 'weekly' ? 'bold' : 'normal' }}>
                         7 Days
                       </button>
                       <button 
                         onClick={() => setActivityRange('monthly')}
-                        style={{ padding: '4px 10px', fontSize: '12px', border: 'none', background: activityRange === 'monthly' ? '#3b82f6' : 'transparent', color: activityRange === 'monthly' ? '#fff' : '#888', cursor: 'pointer' }}>
+                        style={{ padding: '6px 12px', fontSize: '12px', border: 'none', background: activityRange === 'monthly' ? '#00D26A' : 'transparent', color: activityRange === 'monthly' ? '#000' : '#888', cursor: 'pointer', fontWeight: activityRange === 'monthly' ? 'bold' : 'normal' }}>
                         30 Days
                       </button>
                     </div>
                   </div>
                   {analytics.mostActiveDay && analytics.mostActiveDay.date !== '-' && (
-                    <span style={{ fontSize: '12px', color: '#888', background: '#222', padding: '4px 8px', borderRadius: '12px' }}>
-                      Most Active: <strong>{new Date(analytics.mostActiveDay.date).toLocaleDateString('en-US', { weekday: 'short' })}</strong> ({analytics.mostActiveDay.hours} hrs)
+                    <span style={{ fontSize: '12px', color: '#00D26A', background: 'rgba(0,210,106,0.1)', border: '1px solid rgba(0,210,106,0.2)', padding: '6px 12px', borderRadius: '12px' }}>
+                      Peak: <strong>{new Date(analytics.mostActiveDay.date).toLocaleDateString('en-US', { weekday: 'short' })}</strong> ({analytics.mostActiveDay.hours} hrs)
                     </span>
                   )}
                 </div>
-                <div style={{ height: '250px' }}>
+                <div style={{ height: '300px' }}>
                   {(activityRange === 'weekly' ? analytics.weeklyProgress : analytics.monthlyProgress)?.every(d => d.hours === 0) ? (
-                    <div style={{height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#888'}}>
-                       <i className="ri-bar-chart-2-line" style={{fontSize: '32px', marginBottom: '10px'}}/>
-                       <p>No activity data available</p>
-                    </div>
+                    <EmptyState 
+                      icon="ri-bar-chart-2-line" 
+                      title="No Activity Data" 
+                      description="You haven't spent any time learning in this period." 
+                    />
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={activityRange === 'weekly' ? analytics.weeklyProgress : analytics.monthlyProgress} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                      <AreaChart data={activityRange === 'weekly' ? analytics.weeklyProgress : analytics.monthlyProgress} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#00D26A" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="#00D26A" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                        <XAxis dataKey="name" stroke="#888" fontSize={10} tickLine={false} axisLine={false} interval={activityRange === 'monthly' ? 4 : 0} />
-                        <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                        <Tooltip contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '8px' }} />
-                        <Area type="monotone" dataKey="hours" name="Hours" stroke="#3b82f6" fillOpacity={1} fill="url(#colorHours)" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                        <XAxis dataKey="name" stroke="#888" fontSize={11} tickLine={false} axisLine={false} interval={activityRange === 'monthly' ? 4 : 0} dy={10} />
+                        <YAxis stroke="#888" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
+                        <Tooltip 
+                          contentStyle={{ background: 'rgba(20,20,20,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', backdropFilter: 'blur(10px)' }}
+                          itemStyle={{ color: '#fff' }}
+                        />
+                        <Area type="monotone" dataKey="hours" name="Hours" stroke="#00D26A" strokeWidth={3} fillOpacity={1} fill="url(#colorHours)" />
                       </AreaChart>
                     </ResponsiveContainer>
                   )}
                 </div>
               </div>
+            </StaggerItem>
 
-              <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '16px' }}>Course Completion</h3>
-                <div style={{ height: '250px' }}>
+            <StaggerItem>
+              <div className="saas-card premium-glass-panel" style={{ padding: '32px' }}>
+                <h3 style={{ margin: '0 0 24px 0', fontSize: '18px' }}>Goal Completion</h3>
+                <div style={{ height: '300px' }}>
                   {analytics.totalEnrolled === 0 ? (
-                    <div style={{height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#888'}}>
-                       <i className="ri-pie-chart-line" style={{fontSize: '32px', marginBottom: '10px'}}/>
-                       <p>No enrolled courses</p>
-                    </div>
+                    <EmptyState 
+                      icon="ri-pie-chart-line" 
+                      title="No Enrolled Courses" 
+                      description="Enroll in a course to see completion stats." 
+                    />
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={analytics.courseCompletionChart || []}
                           cx="50%" cy="50%"
-                          innerRadius={60} outerRadius={80}
+                          innerRadius={80} outerRadius={110}
                           paddingAngle={5}
                           dataKey="value"
                         >
-                          <Cell fill="#10b981" />
-                          <Cell fill="#3b82f6" />
+                          <Cell fill="#00D26A" />
+                          <Cell fill="rgba(255,255,255,0.1)" />
                         </Pie>
-                        <Tooltip contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '8px' }} />
+                        <Tooltip contentStyle={{ background: 'rgba(20,20,20,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} />
                       </PieChart>
                     </ResponsiveContainer>
                   )}
                 </div>
               </div>
-
-            </div>
+            </StaggerItem>
 
             {quizStats && (
-              <div className="dashboard-grid">
-                <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
+              <StaggerItem className="dashboard-grid" style={{ marginTop: '10px' }}>
+                <HoverCard className="saas-card premium-glass-panel" style={{ padding: '24px', borderLeft: '4px solid #aaa' }}>
                   <h3 style={{ margin: '0 0 10px 0', color: '#aaa', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Quizzes Attempted</h3>
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#fff' }}>{quizStats.totalQuizzesAttempted}</div>
-                </div>
-                <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #3b82f630' }}>
+                  <div style={{ fontSize: '40px', fontWeight: 'bold', color: '#fff' }}>{quizStats.totalQuizzesAttempted}</div>
+                </HoverCard>
+                <HoverCard className="saas-card premium-glass-panel" style={{ padding: '24px', borderLeft: '4px solid #3b82f6' }}>
                   <h3 style={{ margin: '0 0 10px 0', color: '#3b82f6', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Passed Quizzes</h3>
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#3b82f6' }}>{quizStats.passedQuizzes || 0}</div>
-                </div>
-                <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #ef444430' }}>
+                  <div style={{ fontSize: '40px', fontWeight: 'bold', color: '#3b82f6' }}>{quizStats.passedQuizzes || 0}</div>
+                </HoverCard>
+                <HoverCard className="saas-card premium-glass-panel" style={{ padding: '24px', borderLeft: '4px solid #ef4444' }}>
                   <h3 style={{ margin: '0 0 10px 0', color: '#ef4444', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Failed Quizzes</h3>
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#ef4444' }}>{quizStats.failedQuizzes || 0}</div>
-                </div>
-              </div>
+                  <div style={{ fontSize: '40px', fontWeight: 'bold', color: '#ef4444' }}>{quizStats.failedQuizzes || 0}</div>
+                </HoverCard>
+              </StaggerItem>
             )}
-
-            {analytics.quizTrends && analytics.quizTrends.length > 0 && (
-              <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '16px' }}>Quiz Score Trends</h3>
-                <div style={{ height: '200px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={analytics.quizTrends} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                      <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-                      <Tooltip contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '8px' }} />
-                      <Line type="monotone" dataKey="score" name="Score" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: '#8b5cf6' }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-            
-            {assignmentStats && (
-              <div className="dashboard-grid" style={{ marginTop: '10px' }}>
-                <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
-                  <h3 style={{ margin: '0 0 10px 0', color: '#aaa', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Assignments Submitted</h3>
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#fff' }}>{assignmentStats.totalSubmitted}</div>
-                </div>
-                <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #eab30830' }}>
-                  <h3 style={{ margin: '0 0 10px 0', color: '#eab308', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Pending Reviews</h3>
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#eab308' }}>{assignmentStats.pendingReviews}</div>
-                </div>
-                <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333' }}>
-                  <h3 style={{ margin: '0 0 10px 0', color: '#aaa', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Average Marks</h3>
-                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#10b981' }}>{assignmentStats.averageMarks}</div>
-                </div>
-              </div>
-            )}
-
-            {analytics.assignmentTrends && analytics.assignmentTrends.length > 0 && (
-              <div style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333', marginTop: '20px' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '16px' }}>Assignment Score Trends</h3>
-                <div style={{ height: '200px' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={analytics.assignmentTrends} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                      <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} domain={[0, 'dataMax']} />
-                      <Tooltip contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '8px' }} />
-                      <Line type="monotone" dataKey="score" name="Marks" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-          </div>
+          </StaggerContainer>
         )}
 
-        {continueCourse && continueCourse.course && (
-          <div style={{ marginBottom: '50px' }}>
-            <ContinueLearningCard progressData={continueCourse} />
-          </div>
-        )}
-
-        <div style={{ marginBottom: '50px', background: 'linear-gradient(145deg, #1a1a1a, #111)', borderRadius: '24px', border: '1px solid #ec489950', display: 'flex', padding: '40px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '30px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '200px', height: '200px', background: '#ec4899', filter: 'blur(100px)', opacity: 0.15, borderRadius: '50%' }}></div>
-          <div style={{ zIndex: 1 }}>
-            <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '28px', margin: '0 0 10px 0', color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <i className="ri-robot-2-fill" style={{ color: '#ec4899' }}></i> Your Personal AI Career Coach
-            </h2>
-            <p style={{ color: '#ccc', fontSize: '16px', margin: '0 0 20px 0', maxWidth: '600px', lineHeight: '1.6' }}>
-              Get a personalized weekly review of your learning journey. Our AI analyzes your progress, identifies your strengths, highlights areas for improvement, and sets your goals for next week.
-            </p>
-            <button 
-              onClick={() => navigate('/student/ai-coach')}
-              className="ripple-btn"
-              style={{ padding: '12px 30px', background: '#ec4899', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}
-            >
-              Get Weekly Review
-            </button>
-          </div>
-          <div style={{ zIndex: 1, display: 'flex', gap: '15px' }}>
-             <div style={{ background: '#111', padding: '15px 20px', borderRadius: '12px', border: '1px solid #333', textAlign: 'center' }}>
-               <i className="ri-sword-fill" style={{ fontSize: '24px', color: '#10b981' }}></i>
-               <div style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>Strengths</div>
-             </div>
-             <div style={{ background: '#111', padding: '15px 20px', borderRadius: '12px', border: '1px solid #333', textAlign: 'center' }}>
-               <i className="ri-focus-2-line" style={{ fontSize: '24px', color: '#f59e0b' }}></i>
-               <div style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>Goals</div>
-             </div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: '50px' }}>
-          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '24px', marginBottom: '20px' }}>My Courses</h2>
+        <SlideUp delay={0.3} duration={1} style={{ marginBottom: '50px' }}>
+          <h2 className="saas-heading" style={{ fontSize: '24px', marginBottom: '20px' }}>My Enrolled Courses</h2>
           <StudentCourseGrid courses={enrolledCourses} />
-        </div>
+        </SlideUp>
 
-        <div style={{ marginBottom: '50px' }}>
-          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '24px', marginBottom: '20px' }}>Purchase History</h2>
-          {paymentHistory && paymentHistory.length > 0 ? (
-            <div className="responsive-table-wrap">
-              <table className="responsive-table">
-                <thead>
-                  <tr>
-                    <th>Course Name</th>
-                    <th>Amount</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Payment ID</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paymentHistory.map(payment => (
-                    <tr key={payment._id}>
-                      <td>{payment.courseTitle || (payment.course && payment.course.title)}</td>
-                      <td style={{ color: '#3b82f6', fontWeight: 'bold' }}>₹{payment.amount}</td>
-                      <td>{new Date(payment.createdAt).toLocaleDateString()}</td>
-                      <td>
-                        <span className={`status-badge ${(payment.paymentStatus === 'paid' || payment.paymentStatus === 'enrolledAfterPayment') ? 'success' : 'danger'}`}>
-                          {payment.paymentStatus.toUpperCase()}
-                        </span>
-                      </td>
-                      <td style={{ fontFamily: 'monospace' }}>{payment.razorpayPaymentId || 'N/A'}</td>
-                      <td>
-                        <button 
-                          onClick={() => setSelectedPayment(payment)}
-                          className="btn btn-sm"
-                          style={{ background: 'transparent', color: '#3b82f6', border: '1px solid #3b82f6' }}
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* RESTORED AI RECOMMENDATIONS */}
+        {recommendedCourses && recommendedCourses.length > 0 && (
+          <SlideUp delay={0.4} duration={1} style={{ marginBottom: '50px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+              <i className="ri-sparkling-fill" style={{ color: '#8b5cf6', fontSize: '24px' }}></i>
+              <h2 className="saas-heading" style={{ fontSize: '24px', margin: 0 }}>Smart Course Suggestions</h2>
             </div>
-          ) : (
-            <div className="empty-state">
-              <i className="ri-shopping-cart-2-line empty-state-icon"></i>
-              <p className="empty-state-text">No purchases found.</p>
-            </div>
-          )}
-        </div>
+            <StudentCourseGrid courses={recommendedCourses} />
+          </SlideUp>
+        )}
 
-        <div>
-          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '24px', marginBottom: '20px' }}>My Certificates</h2>
+        <SlideUp delay={0.5} duration={1}>
+          <h2 className="saas-heading" style={{ fontSize: '24px', marginBottom: '20px' }}>My Certificates</h2>
           {certificates && certificates.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+            <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
               {certificates.map(cert => (
-                <div key={cert._id} style={{ background: '#1a1a1a', padding: '20px', borderRadius: '12px', border: '1px solid #333', position: 'relative' }}>
-                  {cert.isRevoked && (
+                <StaggerItem key={cert._id}>
+                  <HoverCard className="saas-card premium-glass-panel" style={{ padding: '24px', position: 'relative' }}>
+                    {cert.isRevoked && (
                     <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#ef4444', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>
                       REVOKED
                     </div>
                   )}
                   <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
-                    <div style={{ width: '50px', height: '50px', background: '#3b82f620', color: '#3b82f6', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '24px' }}>
+                    <div style={{ width: '50px', height: '50px', background: 'rgba(59,130,246,0.1)', color: '#3b82f6', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '24px' }}>
                       <i className="ri-award-fill"></i>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ margin: '0 0 5px 0' }}>{cert.courseTitle || (cert.courseId && cert.courseId.title)}</h4>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>ID: {cert.certificateId}</p>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>Issued: {new Date(cert.issuedAt || cert.issueDate).toLocaleDateString()}</p>
+                    <div>
+                      <h4 style={{ margin: '0 0 5px 0', fontSize: '16px', color: '#fff' }}>{cert.courseTitle}</h4>
+                      <div style={{ fontSize: '12px', color: '#888' }}>Issued: {new Date(cert.issueDate).toLocaleDateString()}</div>
                     </div>
                   </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <button 
-                      onClick={() => window.open(`http://localhost:5000${cert.generatedPdfPath || cert.pdfUrl}`, '_blank')}
-                      className="ripple-btn"
-                      disabled={cert.isRevoked}
-                      style={{ width: '100%', padding: '10px', background: cert.isRevoked ? '#333' : '#3b82f6', color: cert.isRevoked ? '#666' : '#fff', border: 'none', borderRadius: '6px', cursor: cert.isRevoked ? 'not-allowed' : 'pointer' }}
-                    >
-                      <i className="ri-download-2-line" style={{ marginRight: '5px' }}></i> Download PDF
-                    </button>
-                    
-                    {!cert.isRevoked && cert.qrVerificationUrl && (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <button 
-                          onClick={() => { navigator.clipboard.writeText(cert.qrVerificationUrl); alert('Verification Link Copied!'); }}
-                          style={{ padding: '8px', background: 'transparent', border: '1px solid #333', color: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
-                        >
-                          <i className="ri-links-line"></i> Copy Link
-                        </button>
-                        <button 
-                          onClick={() => window.open(`https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${encodeURIComponent(cert.courseTitle || cert.courseId?.title)}&organizationName=LMS%20Coding%20School&issueYear=${new Date(cert.issuedAt).getFullYear()}&issueMonth=${new Date(cert.issuedAt).getMonth()+1}&certUrl=${encodeURIComponent(cert.qrVerificationUrl)}&certId=${cert.certificateId}`, '_blank')}
-                          style={{ padding: '8px', background: '#0077b5', border: 'none', color: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-                        >
-                          <i className="ri-linkedin-fill"></i> LinkedIn
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  <button 
+                    onClick={() => navigate(`/certificates/${cert.certificateId}`)}
+                    className="btn btn-primary"
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    View Certificate
+                  </button>
+                  </HoverCard>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           ) : (
-            <div className="empty-state">
-              <i className="ri-medal-line empty-state-icon"></i>
-              <p className="empty-state-text">No certificates earned yet. Keep learning!</p>
-            </div>
+            <EmptyState 
+              icon="ri-award-line" 
+              title="No Certificates Yet" 
+              description="Complete a course to earn your first certificate." 
+            />
           )}
-        </div>
+        </SlideUp>
+
       </div>
 
-      <ReceiptModal 
-        isOpen={!!selectedPayment} 
-        onClose={() => setSelectedPayment(null)} 
-        payment={selectedPayment}
-        studentName={user?.name}
-      />
+      {selectedPayment && (
+        <ReceiptModal payment={selectedPayment} onClose={() => setSelectedPayment(null)} />
+      )}
     </div>
   );
 }

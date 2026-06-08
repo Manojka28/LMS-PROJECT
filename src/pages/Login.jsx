@@ -105,7 +105,11 @@ export default function Login() {
             {errors.password && <span className="field-error">{errors.password}</span>}
           </div>
           <MagneticButton type="submit" className="green-btn check-btn ripple-btn" disabled={submitting}>
-            {submitting ? 'Signing in...' : 'Sign In'}
+            {submitting ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="ri-loader-4-line" style={{ animation: 'spin 1s linear infinite' }} /> Signing in...
+              </span>
+            ) : 'Sign In'}
           </MagneticButton>
         </form>
 

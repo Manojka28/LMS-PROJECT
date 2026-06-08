@@ -5,12 +5,16 @@ import { formatPrice } from '../utils/courseHelpers';
 import { useWishlist } from '../context/WishlistContext';
 import CourseNavbar from '../components/CourseNavbar';
 import TiltCard from '../components/TiltCard';
+import SkeletonLoader from '../components/common/SkeletonLoader';
+import EmptyState from '../components/common/EmptyState';
+import { useToast } from '../components/common/ToastContext';
 
 const PLACEHOLDER_IMG =
   'https://images.unsplash.com/photo-1516321318423-f06f868dfd4d?q=80&w=800&auto=format&fit=crop';
 
 export default function CoursesPage() {
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const { showError } = useToast();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,11 +30,12 @@ export default function CoursesPage() {
         if (!cancelled) setCourses(data.courses || []);
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof ApiError
-              ? err.message
-              : 'Failed to load courses. Is the API server running?'
-          );
+          const errMsg = err instanceof ApiError ? err.message : 'Failed to load courses. Is the API server running?';
+          setError(errMsg);
+          showError(errMsg, 5000, {
+            label: 'Retry',
+            onClick: () => window.location.reload()
+          });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -59,9 +64,11 @@ export default function CoursesPage() {
         </header>
 
         {loading && (
-          <div className="page-loading">
-            <div className="loading-bar" style={{ width: 200 }} />
-            <p>Loading courses...</p>
+          <div className="courses-grid" style={{ marginTop: '40px' }}>
+             <SkeletonLoader type="card" count={1} />
+             <SkeletonLoader type="card" count={1} />
+             <SkeletonLoader type="card" count={1} />
+             <SkeletonLoader type="card" count={1} />
           </div>
         )}
 
@@ -76,10 +83,11 @@ export default function CoursesPage() {
         )}
 
         {!loading && !error && courses.length === 0 && (
-          <div className="course-state-card">
-            <i className="ri-book-open-line" />
-            <p>No courses published yet.</p>
-          </div>
+          <EmptyState 
+            icon="ri-book-open-line" 
+            title="No courses found" 
+            description="No courses are currently published. Check back later." 
+          />
         )}
 
         {!loading && !error && courses.length > 0 && (

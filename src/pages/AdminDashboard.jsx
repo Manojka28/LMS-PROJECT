@@ -10,9 +10,13 @@ import AdminPaymentsTable from '../components/admin/AdminPaymentsTable';
 import AdminInstructorsTable from '../components/admin/AdminInstructorsTable';
 import AdminAuditLogsTable from '../components/admin/AdminAuditLogsTable';
 import AdminSystemHealth from '../components/admin/AdminSystemHealth';
+import { useToast } from '../components/common/ToastContext';
+import SkeletonLoader from '../components/common/SkeletonLoader';
+import { FadeIn } from '../components/common/MotionWrapper';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const { showError, showSuccess } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,11 +46,11 @@ export default function AdminDashboard() {
       if (paymentsRes.success) setPayments(paymentsRes.payments);
       if (instructorsRes.success) setInstructors(instructorsRes.instructors);
     } catch (err) {
-      setError(err.message || 'Failed to load admin dashboard data');
+      showError(err.message || 'Failed to load admin dashboard data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showError]);
 
   useEffect(() => {
     fetchAll();
@@ -63,12 +67,11 @@ export default function AdminDashboard() {
       )}
 
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: '#888' }}>
-          <div style={{ width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-          <p>Loading dashboard data...</p>
+        <div style={{ padding: '20px' }}>
+          <SkeletonLoader type="card" count={3} />
         </div>
       ) : (
-        <>
+        <FadeIn key={activeTab}>
           {activeTab === 'overview' && (
             <AdminOverview 
               analytics={analytics} 
@@ -95,7 +98,7 @@ export default function AdminDashboard() {
           {activeTab === 'systemhealth' && (
             <AdminSystemHealth />
           )}
-        </>
+        </FadeIn>
       )}
 
       <style>{`

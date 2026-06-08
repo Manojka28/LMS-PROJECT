@@ -1,4 +1,5 @@
 import React from 'react';
+import EmptyState from './common/EmptyState';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -17,12 +18,17 @@ export default class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary">
-          <h2>Something went wrong</h2>
-          <p>{this.state.message}</p>
-          <button type="button" onClick={() => window.location.assign('/')}>
-            Back to home
-          </button>
+        <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0b0b0b' }}>
+          <EmptyState 
+            icon="ri-error-warning-fill" 
+            title="Something went wrong" 
+            description={this.state.message || "An unexpected error occurred in the application."} 
+            action={
+              <button type="button" className="btn btn-primary" onClick={() => window.location.assign('/')}>
+                <i className="ri-home-4-line" style={{ marginRight: '8px' }}></i> Back to home
+              </button>
+            }
+          />
         </div>
       );
     }

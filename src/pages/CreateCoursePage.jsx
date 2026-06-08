@@ -8,9 +8,11 @@ import {
 } from '../utils/courseHelpers';
 import CourseNavbar from '../components/CourseNavbar';
 import CourseForm from '../components/CourseForm';
+import { useToast } from '../components/common/ToastContext';
 
 export default function CreateCoursePage() {
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
   const [values, setValues] = useState(() => emptyCourseForm());
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
@@ -30,9 +32,12 @@ export default function CreateCoursePage() {
     setSubmitting(true);
     try {
       const data = await api.post('/course', formValuesToPayload(values));
+      showSuccess('Course created successfully!');
       navigate(`/courses/${data.course._id}`, { replace: true });
     } catch (err) {
-      setFormError(err instanceof ApiError ? err.message : 'Failed to create course.');
+      const msg = err instanceof ApiError ? err.message : 'Failed to create course.';
+      setFormError(msg);
+      showError(msg);
     } finally {
       setSubmitting(false);
     }

@@ -5,12 +5,16 @@ import CourseNavbar from '../components/CourseNavbar';
 import TiltCard from '../components/TiltCard';
 import MagneticButton from '../components/MagneticButton';
 import ProgressBar from '../components/ProgressBar';
+import SkeletonLoader from '../components/common/SkeletonLoader';
+import EmptyState from '../components/common/EmptyState';
+import { useToast } from '../components/common/ToastContext';
 
 const PLACEHOLDER_IMG =
   'https://images.unsplash.com/photo-1516321318423-f06f868dfd4d?q=80&w=800&auto=format&fit=crop';
 
 export default function MyCoursesPage() {
   const navigate = useNavigate();
+  const { showError } = useToast();
   const [courses, setCourses] = useState([]);
   const [progressData, setProgressData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -41,11 +45,12 @@ export default function MyCoursesPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof ApiError
-              ? err.message
-              : 'Failed to load your courses and progress.'
-          );
+          const errMsg = err instanceof ApiError ? err.message : 'Failed to load your courses and progress.';
+          setError(errMsg);
+          showError(errMsg, 5000, {
+            label: 'Retry',
+            onClick: () => window.location.reload()
+          });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -74,9 +79,10 @@ export default function MyCoursesPage() {
         </header>
 
         {loading && (
-          <div className="page-loading">
-            <div className="loading-bar" style={{ width: 200 }} />
-            <p>Loading your courses...</p>
+          <div className="courses-grid" style={{ marginTop: '40px' }}>
+             <SkeletonLoader type="card" count={1} />
+             <SkeletonLoader type="card" count={1} />
+             <SkeletonLoader type="card" count={1} />
           </div>
         )}
 
@@ -91,13 +97,16 @@ export default function MyCoursesPage() {
         )}
 
         {!loading && !error && courses.length === 0 && (
-          <div className="course-state-card">
-            <i className="ri-book-open-line" />
-            <p>You haven't enrolled in any courses yet.</p>
-            <Link to="/courses" className="green-btn-sm" style={{ marginTop: '16px' }}>
-              Browse Catalog
-            </Link>
-          </div>
+          <EmptyState 
+            icon="ri-book-open-line" 
+            title="No enrolled courses" 
+            description="You haven't enrolled in any courses yet." 
+            action={
+              <Link to="/courses" className="btn btn-primary">
+                Browse Catalog
+              </Link>
+            }
+          />
         )}
 
         {!loading && !error && courses.length > 0 && (
